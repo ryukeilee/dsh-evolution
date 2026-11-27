@@ -100,54 +100,66 @@ function main(argv) {
   const desktopCli = '/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh';
   options.cli ||= fs.existsSync(desktopCli) ? desktopCli : 'dsh';
   const home = path.resolve(options.home);
-  const plan = setupPlan({ ...options, home, tarball: path.resolve(options.tarball) });
-  console.log(JSON.stringify({ apply: options.apply, home, profiles: plan.map(({ profile, file, role, command, args }) => ({ profile, file, role, command, args })) }, null, 2));
-  if (!options.apply) return;
-  const bytes = fs.readFileSync(path.resolve(options.tarball));
-  if (createHash('sha256').update(bytes).digest('hex') !== plan[0].sha256) throw new Error('Package changed after planning; nothing installed');
-  const artifact = plan[0].artifact;
-  fs.mkdirSync(path.dirname(artifact), { recursive: true, mode: 0o700 });
-  try {
-    const descriptor = fs.openSync(artifact, 'wx', 0o600);
-    try { fs.writeFileSync(descriptor, bytes); fs.fsyncSync(descriptor); }
-    finally { fs.closeSync(descriptor); }
-  } catch (error) { if (error.code !== 'EEXIST') throw error; }
-  if (!fs.readFileSync(artifact).equals(bytes)) throw new Error('Cached package disagrees with its digest; preserving it for inspection');
-  // Official plugin management owns dependency registration. Apply each owned
-  // override only after success; report partial progress instead of pretending
-  // a multi-profile install is an atomic DSH transaction.
+  const profiles = ['desktop', 'acp', 'web'];
+  const statuses = Object.fromEntries(profiles.map((profile) => [profile, 'not-attempted']));
+  let plan = null;
   let installError = null;
-  const statuses = Object.fromEntries(plan.map((item) => [item.profile, 'not-attempted']));
-  for (const item of plan) {
+  try {
+    plan = setupPlan({ ...options, home, tarball: path.resolve(options.tarball) });
+  } catch (error) {
+    // A dry run still fails before any install; --apply reports a failed plan
+    // through the same readback wrap-up as an install failure.
+    if (!options.apply) throw error;
+    installError = `Setup planning failed: ${error.message}`;
+  }
+  if (plan) console.log(JSON.stringify({ apply: options.apply, home, profiles: plan.map(({ profile, file, role, command, args }) => ({ profile, file, role, command, args })) }, null, 2));
+  if (!options.apply) return;
+  if (plan) {
+    let currentProfile = null;
     try {
-      const result = spawnSync(item.command, item.args, { env: { ...process.env, DSH_HOME: home }, stdio: 'inherit' });
-      if (result.error || result.status !== 0) throw new Error(`Installation stopped at ${item.profile}; previous profiles remain installed`);
-      const current = fs.existsSync(item.file) ? fs.readFileSync(item.file, 'utf8') : '';
-      // The official CLI may create the profile's stock patch on first install.
-      // Recompute over that file, preserving its contents and all user entries.
-      const temporary = `${item.file}.${randomUUID()}.tmp`;
-      const descriptor = fs.openSync(temporary, 'wx', 0o600);
-      try { fs.writeFileSync(descriptor, managedPatch(current, item.profile)); fs.fsyncSync(descriptor); }
-      finally { fs.closeSync(descriptor); }
-      fs.renameSync(temporary, item.file);
-      if (process.platform !== 'win32') {
-        const directory = fs.openSync(path.dirname(item.file), 'r');
-        try { fs.fsyncSync(directory); } finally { fs.closeSync(directory); }
+      const bytes = fs.readFileSync(path.resolve(options.tarball));
+      if (createHash('sha256').update(bytes).digest('hex') !== plan[0].sha256) throw new Error('Package changed after planning; nothing installed');
+      const artifact = plan[0].artifact;
+      fs.mkdirSync(path.dirname(artifact), { recursive: true, mode: 0o700 });
+      try {
+        const descriptor = fs.openSync(artifact, 'wx', 0o600);
+        try { fs.writeFileSync(descriptor, bytes); fs.fsyncSync(descriptor); }
+        finally { fs.closeSync(descriptor); }
+      } catch (error) { if (error.code !== 'EEXIST') throw error; }
+      if (!fs.readFileSync(artifact).equals(bytes)) throw new Error('Cached package disagrees with its digest; preserving it for inspection');
+      // Official plugin management owns dependency registration. Apply each
+      // owned override only after success; report partial progress instead of
+      // pretending a multi-profile install is an atomic DSH transaction.
+      for (const item of plan) {
+        currentProfile = item.profile;
+        const result = spawnSync(item.command, item.args, { env: { ...process.env, DSH_HOME: home }, stdio: 'inherit' });
+        if (result.error || result.status !== 0) throw new Error(`Installation stopped at ${item.profile}; previous profiles remain installed`);
+        const current = fs.existsSync(item.file) ? fs.readFileSync(item.file, 'utf8') : '';
+        // The official CLI may create the profile's stock patch on first
+        // install. Recompute over that file, preserving all user entries.
+        const temporary = `${item.file}.${randomUUID()}.tmp`;
+        const descriptor = fs.openSync(temporary, 'wx', 0o600);
+        try { fs.writeFileSync(descriptor, managedPatch(current, item.profile)); fs.fsyncSync(descriptor); }
+        finally { fs.closeSync(descriptor); }
+        fs.renameSync(temporary, item.file);
+        if (process.platform !== 'win32') {
+          const directory = fs.openSync(path.dirname(item.file), 'r');
+          try { fs.fsyncSync(directory); } finally { fs.closeSync(directory); }
+        }
+        statuses[item.profile] = 'completed';
+        console.log(`${item.profile}: configured; restart this entry to apply (HMR disabled)`);
       }
-      statuses[item.profile] = 'completed';
-      console.log(`${item.profile}: configured; restart this entry to apply (HMR disabled)`);
     } catch (error) {
-      // An install or configuration failure must use the same wrap-up path so
-      // every target profile is read back and named as unfinished.
-      statuses[item.profile] = 'failed';
+      // Install, configuration and packaging failures all reach the same
+      // wrap-up so every target profile is read back and named as unfinished.
+      if (currentProfile) statuses[currentProfile] = 'failed';
       installError = error.message;
-      break;
     }
   }
-  // Read back every target profile after the loop, including after a partial
-  // run, so the operator sees an explicit per-profile summary and the exact
-  // profiles still needing work.
-  const summary = installedVersionSummary(home, plan.map((item) => item.profile), statuses);
+  // Read back every target profile after the loop, including after a failed
+  // plan or a partial run, so the operator sees an explicit per-profile summary
+  // and the exact profiles still needing work.
+  const summary = installedVersionSummary(home, profiles, statuses);
   console.log(JSON.stringify({ installSummary: summary, ...(installError ? { installError } : {}) }, null, 2));
   if (installError || summary.skewed || summary.unfinished.length > 0) {
     if (installError) console.error(installError);

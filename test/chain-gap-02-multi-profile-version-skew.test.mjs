@@ -87,12 +87,26 @@ test('doctor reports every installed profile version and degrades on skew', asyn
   assert.deepEqual(check.evidence.distinctVersions, ['0.2.22', '0.2.23']);
   assert.equal(check.evidence.referenceVersion, '0.2.23');
   assert.deepEqual(check.evidence.remediationByProfile.map((row) => row.profile), ['web']);
-  assert.match(check.remediation, /web: `DSH_HOME=.*dsh plugin --profile 'web' add 'dsh-evolution-0\.2\.23\.tgz'`/);
+  assert.match(check.remediation, /web: `DSH_HOME=.* dsh plugin --profile 'web' add '\.\/dsh-evolution-0\.2\.23\.tgz'`/);
   assert.equal(check.evidence.remediationByProfile[0].command.includes(home), true, 'the command targets the diagnosed home');
   assert.match(check.summary, /acp=0\.2\.23, desktop=0\.2\.23, web=0\.2\.22/, 'the text summary lists every profile');
   assert.equal(JSON.stringify(report).includes('0.2.22'), true, 'the whole report now carries the lagging version');
   // The single-profile verdict is unchanged and still healthy for acp.
   assert.equal(report.checks.find((entry) => entry.id === 'host.install').level, 'ok');
+});
+
+test('a lagging desktop profile gets the Electron-managed official CLI command', async () => {
+  const home = makeHome('desktop-lag', {
+    desktop: { version: '0.2.22' },
+    acp: { version: '0.2.23' },
+    web: { version: '0.2.23' },
+  });
+  const report = await diagnose(home);
+  const check = report.checks.find((entry) => entry.id === SKEW_ID);
+  assert.equal(check.level, 'degraded');
+  const command = check.evidence.remediationByProfile.find((row) => row.profile === 'desktop').command;
+  assert.match(command, /DeepSeek Harness\.app.*bin\/dsh/, 'plain dsh refuses the desktop profile');
+  assert.match(command, /--profile 'desktop' add '\.\/dsh-evolution-0\.2\.23\.tgz'/);
 });
 
 test('doctor does not add a degraded check when all profiles agree', async () => {
@@ -351,4 +365,30 @@ test('setup --apply reads back every profile even when configuration fails', () 
   assert.equal(json.installSummary.profiles.find((row) => row.profile === 'desktop').status, 'failed');
   assert.equal(json.installSummary.profiles.find((row) => row.profile === 'web').status, 'not-attempted');
   assert.match(result.stderr, /unfinished profiles: /);
+});
+
+test('setup --apply reports a failed plan through the same readback, dry-run keeps failing', () => {
+  const root = scratch('setup-plan-failure');
+  const home = path.join(root, 'home');
+  fs.mkdirSync(home, { recursive: true });
+  const notATarball = path.join(root, 'not-a-file');
+  fs.mkdirSync(notATarball, { recursive: true });
+  const cli = fakeCli(root);
+  const run = (apply) => spawnSync(process.execPath, ['--max-old-space-size=4096',
+    path.join(repoRoot, 'scripts', 'setup-experience.mjs'),
+    '--home', home, '--tarball', notATarball, '--cli', cli, ...(apply ? ['--apply'] : [])],
+  { encoding: 'utf8', env: { ...process.env, DSH_HOME: home } });
+
+  const applied = run(true);
+  assert.equal(applied.status, 1);
+  const json = JSON.parse(applied.stdout.slice(applied.stdout.indexOf('{\n  "installSummary"')));
+  assert.match(json.installError, /Setup planning failed: Tarball required/);
+  assert.deepEqual(json.installSummary.unfinished.map((row) => row.profile), ['desktop', 'acp', 'web']);
+  assert.ok(json.installSummary.unfinished.every((row) => row.status === 'not-attempted'));
+  assert.match(applied.stderr, /unfinished profiles: desktop=unknown, acp=unknown, web=unknown/);
+
+  const dry = run(false);
+  assert.equal(dry.status, 1, 'dry-run still rejects an invalid plan before any readback');
+  assert.equal(dry.stdout.includes('installSummary'), false);
+  assert.match(dry.stderr, /Tarball required/);
 });
