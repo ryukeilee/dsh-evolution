@@ -47,6 +47,43 @@ function eligibilityDecisions(records, profile) {
   }));
 }
 
+/** A structurally valid published record, so integrity is about the overrides. */
+function validRecord(id, overrides = {}) {
+  const pluginName = `dsh-${id}`;
+  return {
+    id,
+    schemaVersion: 1,
+    experimentId: `exp-${id}`,
+    pluginName,
+    moduleUrl: pathToFileURL(path.join('/clone', 'promoted', pluginName, 'lib', 'index.js')).href,
+    entry: 'lib/index.js',
+    sourceSha256: 'a'.repeat(64),
+    manifestSha256: 'b'.repeat(64),
+    publisherProfile: 'desktop',
+    approvedProfiles: ['acp'],
+    stable: {
+      committedAt: '2026-01-01T00:00:00.000Z',
+      decision: 'benefit',
+      canary: { healthObservationWindow: 2, observations: 2, startupVerified: true },
+    },
+    requiredServices: [],
+    serviceMembers: {},
+    requiredCapabilities: ['fiberLifecycle', 'fiberAwait', 'include'],
+    hostOnly: true,
+    host: { ...CURRENT_HOST },
+    publishedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+const validMarker = (id, sourceSha256) => ({
+  recordId: id,
+  sourceSha256,
+  approvalSha256: 'c'.repeat(64),
+  evidenceSha256: 'd'.repeat(64),
+  at: '2026-01-02T00:00:00.000Z',
+});
+
 test('revalidation runner: a partially revoked record still has its other profile as a target', () => {
   const record = { id: TARGET_A, approvedProfiles: ['acp', 'web'] };
   const disable = { entries: [{ pluginId: TARGET_A, profile: 'web', reason: 'operator test' }] };
@@ -121,19 +158,12 @@ test('revalidation runner: the clone keeps supersession markers', () => {
 test('revalidation runner: operator-disabled links traverse to the terminal version', () => {
   const THIRD = 'evolution-promoted-cccccccccccc';
   const records = [
-    {
-      id: TARGET_A,
-      approvedProfiles: ['acp'],
-      sourceSha256: 'a'.repeat(64),
-      supersededBy: { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } },
-    },
-    {
-      id: TARGET_B,
-      approvedProfiles: ['acp'],
+    validRecord(TARGET_A, { supersededBy: { acp: validMarker(TARGET_B, 'b'.repeat(64)) } }),
+    validRecord(TARGET_B, {
       sourceSha256: 'b'.repeat(64),
-      supersededBy: { acp: { recordId: THIRD, sourceSha256: 'c'.repeat(64) } },
-    },
-    { id: THIRD, approvedProfiles: ['acp'], sourceSha256: 'c'.repeat(64) },
+      supersededBy: { acp: validMarker(THIRD, 'c'.repeat(64)) },
+    }),
+    validRecord(THIRD, { sourceSha256: 'c'.repeat(64) }),
   ];
   // B is operator-disabled in acp, so it has no isolated boot; A and C did boot.
   const bootStatuses = new Map([
@@ -152,8 +182,8 @@ test('revalidation runner: operator-disabled links traverse to the terminal vers
 test('revalidation runner: unapproved and fully revoked records are non-integrity skips', () => {
   const REVOKED = 'evolution-promoted-dddddddddddd';
   const records = [
-    { id: TARGET_A, approvedProfiles: ['web'], sourceSha256: 'a'.repeat(64) },
-    { id: REVOKED, approvedProfiles: ['acp', 'web'], sourceSha256: 'd'.repeat(64) },
+    validRecord(TARGET_A, { approvedProfiles: ['web'] }),
+    validRecord(REVOKED, { approvedProfiles: ['acp', 'web'], sourceSha256: 'd'.repeat(64) }),
   ];
   const disable = { entries: [
     { pluginId: REVOKED, profile: 'acp' },
@@ -183,6 +213,77 @@ test('revalidation runner: an ineligible tail restores its predecessor after ado
   assert.equal(result.get(TARGET_A).supersededBy, TARGET_B);
   assert.equal(result.get(TARGET_B).status, 'eligible', 'B is the restored terminal for A');
   assert.equal(result.get(THIRD).status, 'skipped-incompatible');
+});
+
+test('revalidation runner: a revoked but structurally invalid link stops the chain', () => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  // B is revoked in acp AND structurally invalid (hostOnly=false). Production
+  // drops it in readSharedIndex before any chain decision, so the runner must
+  // predict it as skipped-invalid, not as a traversable operator-disabled hop.
+  const a = validRecord(TARGET_A, {
+    supersededBy: { acp: validMarker(TARGET_B, 'b'.repeat(64)) },
+  });
+  const b = validRecord(TARGET_B, { hostOnly: false });
+  const c = validRecord(THIRD);
+  const records = [a, b, c];
+  const disable = { entries: [{ pluginId: TARGET_B, profile: 'acp', reason: 'operator' }] };
+  const bootStatuses = new Map([
+    [TARGET_A, { status: 'active' }],
+    [THIRD, { status: 'active' }],
+  ]);
+  const result = runner.expectedAfterAdoption(records, 'acp', bootStatuses, disable);
+  assert.deepEqual(result.get(TARGET_B), { status: 'skipped-invalid', reason: 'record-host-only' },
+    'structure is checked before revocation, exactly like the production consumer');
+  assert.equal(result.get(TARGET_A).status, 'eligible',
+    'an invalid middle link must not suppress its still-active predecessor (eligible -> active boot expectation)');
+});
+
+test('revalidation runner: consumer state snapshots restore the exact source bytes per boot', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-revalidation-consumer-state-'));
+  try {
+    const clone = path.join(root, 'clone');
+    const stateDir = path.join(clone, 'storages', 'evolution', 'shared-plugins', 'consumers');
+    fs.mkdirSync(stateDir, { recursive: true });
+    const acpFile = path.join(stateDir, 'acp.json');
+    const webFile = path.join(stateDir, 'web.json');
+    const acpBytes = `${JSON.stringify({
+      schemaVersion: 1,
+      plugins: [{ id: TARGET_A, status: 'failed', reason: 'include-unavailable' }],
+    }, null, 2)}\n`;
+    const webBytes = `${JSON.stringify({
+      schemaVersion: 1,
+      plugins: [{ id: TARGET_B, status: 'active', reason: null }],
+    }, null, 2)}\n`;
+    fs.writeFileSync(acpFile, acpBytes);
+    fs.writeFileSync(webFile, webBytes);
+
+    const snapshot = runner.snapshotConsumerStates(clone, ['acp', 'web']);
+    // A boot between the snapshot and the next one overwrites the real receipt.
+    fs.writeFileSync(acpFile, `${JSON.stringify({
+      schemaVersion: 1,
+      plugins: [{ id: TARGET_A, status: 'skipped-unapproved', reason: 'profile-not-approved' }],
+    }, null, 2)}\n`);
+    runner.restoreConsumerStates(snapshot);
+    assert.equal(fs.readFileSync(acpFile, 'utf8'), acpBytes);
+    assert.equal(fs.readFileSync(webFile, 'utf8'), webBytes);
+    assert.equal(JSON.parse(fs.readFileSync(acpFile, 'utf8')).plugins[0].reason, 'include-unavailable');
+
+    // Only one profile present: the other is a no-op, including a missing file.
+    fs.rmSync(webFile);
+    const partial = runner.snapshotConsumerStates(clone, ['acp', 'web']);
+    fs.writeFileSync(acpFile, '{}\n');
+    runner.restoreConsumerStates(partial);
+    assert.equal(fs.readFileSync(acpFile, 'utf8'), acpBytes);
+    assert.equal(fs.existsSync(webFile), false);
+
+    // No state files at all: both snapshot and restore are safe no-ops.
+    fs.rmSync(acpFile);
+    const empty = runner.snapshotConsumerStates(clone, ['acp', 'web']);
+    runner.restoreConsumerStates(empty);
+    assert.equal(fs.existsSync(acpFile), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('revalidation runner: parses its operator flags', () => {

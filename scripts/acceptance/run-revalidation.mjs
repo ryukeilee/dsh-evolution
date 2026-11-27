@@ -37,7 +37,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { applySupersession, hostCompatible, hostDigest, isDisabledForProfile, readDisableState } from '../../lib/promoted-sharing.js';
+import { applySupersession, hostCompatible, hostDigest, isDisabledForProfile, readDisableState, validateSharedRecord } from '../../lib/promoted-sharing.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
@@ -208,16 +208,42 @@ export function profileIsRevalidationTarget(record, profile, disable) {
 }
 
 /**
- * Self-eligibility that holds before any attestation boot: a record without
- * this profile's approval or explicitly revoked in it is a real non-integrity
- * skip. Reporting those as `skipped-invalid` would make a chain traversal stop
- * at them and invent an active predecessor; `disabled` / `skipped-unapproved`
- * are traversable, which is what the production consumer reports too.
+ * The same strict record validation the production consumer applies in
+ * `readSharedIndex` before it evaluates anything. `validateSharedRecord` never
+ * reads files: `paths` only supplies the promoted root for its containment
+ * check, derived from the record's own module URL. A malformed URL fails
+ * validation normally, so no record is silently treated as eligible here.
+ */
+function recordValidationVerdict(record) {
+  let paths = {};
+  try {
+    const moduleFile = fileURLToPath(record?.moduleUrl);
+    paths = { pluginRoot: path.resolve(path.dirname(moduleFile), '..', '..') };
+  } catch {
+    // A record without a usable file: module URL fails validation below.
+  }
+  try {
+    return validateSharedRecord(record, paths);
+  } catch {
+    return { ok: false, reason: 'record-module-url' };
+  }
+}
+
+/**
+ * Self-eligibility that holds before any attestation boot. Structure is
+ * checked first, exactly like the production consumer: a record dropped by
+ * `readSharedIndex` (including one that is also revoked) is `skipped-invalid`
+ * and stops a supersession chain. Only a structurally valid record without this
+ * profile's approval or explicitly revoked in it is a non-integrity skip:
+ * `disabled` / `skipped-unapproved` are traversable, matching production.
  */
 function defaultOwnStatuses(records, profile, disable) {
   const statuses = new Map();
   for (const record of Array.isArray(records) ? records : []) {
-    if (!Array.isArray(record?.approvedProfiles) || !record.approvedProfiles.includes(profile)) {
+    const verdict = recordValidationVerdict(record);
+    if (!verdict.ok) {
+      statuses.set(record.id, { status: 'skipped-invalid', reason: verdict.reason });
+    } else if (!Array.isArray(record?.approvedProfiles) || !record.approvedProfiles.includes(profile)) {
       statuses.set(record.id, { status: 'skipped-unapproved', reason: 'profile-not-approved' });
     } else if (isDisabledForProfile(disable, record.id, profile)) {
       statuses.set(record.id, { status: 'disabled', reason: 'operator-disabled' });
@@ -309,6 +335,35 @@ export function normalizeSymlinks(root, sourceRoot = root) {
       normalizeSymlinks(file, path.join(sourceRoot, relative));
     }
   }
+}
+
+/**
+ * Snapshot a cloned home's per-profile consumer state reports. Every boot
+ * rewrites these files, so a later isolated boot would otherwise inherit the
+ * previous boot's status row as its `previousState` and its prediction would
+ * depend on boot order. Only existing files are captured; the source home is
+ * never read or written by these helpers.
+ */
+export function snapshotConsumerStates(cloneHome, profiles = PROFILES) {
+  const snapshot = new Map();
+  for (const profile of Array.isArray(profiles) ? profiles : []) {
+    const file = path.join(cloneHome, CONSUMER_STATE, profile + '.json');
+    try {
+      snapshot.set(file, fs.readFileSync(file));
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+  }
+  return snapshot;
+}
+
+/** Restore a snapshot byte-for-byte, only at the paths it was captured from. */
+export function restoreConsumerStates(snapshot) {
+  for (const [file, bytes] of snapshot instanceof Map ? snapshot : []) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, bytes);
+  }
+  return snapshot;
 }
 
 function treeDigest(root, options) {
@@ -492,9 +547,18 @@ async function main(argv) {
   const cloneDataRoot = path.join(clone, 'storages', 'evolution');
   const cloneIndexPath = path.join(clone, PUBLISHED_REL);
   writeJsonFile(cloneIndexPath, rewriteIndexForVerification(index, { dataRoot: cloneDataRoot, host: null, targets: [] }));
+  // Every boot in this clone must start from the source home's actual consumer
+  // report. A boot writes those files, so without restoring the snapshot a
+  // later boot would inherit an earlier boot's sticky/skip status as its
+  // previousState and its prediction would depend on boot order.
+  const consumerSnapshot = snapshotConsumerStates(clone);
 
   // 2. Baseline boot per profile: no expectations, so the consumers report what
-  //    they really did with every record and capture their own host facts.
+  //    they really did with every record and capture their own host facts. Each
+  //    profile writes its own state file, so the two baseline boots do not
+  //    overwrite one another; restore once before the phase, not between them
+  //    (their reports are what the pending-record selection reads below).
+  restoreConsumerStates(consumerSnapshot);
   const factsByProfile = {};
   for (const profile of PROFILES) {
     const outcome = await bootConsumer({
@@ -616,6 +680,9 @@ async function main(argv) {
           calls.push({ id: record.id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: record.id });
         }
       }
+      // Reset the inherited report before every isolated boot: the previous
+      // record's boot wrote its own status rows into this same profile file.
+      restoreConsumerStates(consumerSnapshot);
       const outcome = await bootConsumer({
         profile,
         cloneHome: clone,

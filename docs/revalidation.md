@@ -36,9 +36,13 @@ runner 做这些事：
    profile 保留），全部 `supersededBy` 原样保留。于是同一时刻最多只有被测记录可挂载：目标
    记录必须是 `active`，`sourceSha256` 未变，行上的 `hostDigest` 等于当前宿主摘要；非目标
    记录只读取自己的状态行，作为采纳后拓扑判断的自身资格事实（它不执行任何工具调用）。
-   未获该 profile 批准的记录记为 `skipped-unapproved / profile-not-approved`，被操作者撤销的
-   记录（含完全撤销）记为 `disabled / operator-disabled`；它们不启动，也**不是**
-   `skipped-invalid`，替换链会穿过它们继续找到真正的末端。
+   预测与生产同序：结构不合法的记录（例如 `hostOnly=false`）先按 `readSharedIndex` 的校验判为
+   `skipped-invalid`，即使它同时被撤销也不会被当成可穿越的 `disabled`，替换链在它这里停止。
+   结构合法但未获该 profile 批准的记录记为 `skipped-unapproved / profile-not-approved`，
+   结构合法且被操作者撤销的记录（含完全撤销）记为 `disabled / operator-disabled`；这些非完整性
+   跳过不启动，但替换链会穿过它们继续找到真正的末端。
+   每次 boot 前都把克隆内各 profile 的消费状态文件恢复成克隆时的原始字节：上一次 boot 会写同一份
+   文件，不恢复就会把真实 sticky 回执覆盖成前一个 boot 的状态，使预测依赖 boot 顺序。
 4. 按 `scripts/acceptance/revalidation-plans.json` 对每条目标记录在**它自己的隔离 boot 里**
    做一次确定性的真实工具调用（官方批量执行器；选择了 PTC `run_code` 程序型执行器的入口会
    改用同一 agent 下的注册定义，报告里写明用的是哪条路径）。证据里的 `active`、
