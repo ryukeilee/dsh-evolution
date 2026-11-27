@@ -202,7 +202,7 @@ async function mountSession(ctx, dataRoot, overrides = {}) {
  * (a row with no fiber) and a plugin's own apply failure can coexist in the
  * same fallback pass without executing real plugin code.
  */
-function fakeIncludeAdapter(config, { fiberFor }) {
+function fakeIncludeAdapter(config, { fiberFor, omitEntries = new Set() }) {
   const entries = new Map();
   return {
     capabilities: { entryResolver: true, treeAwait: true, liveRootEntries: true },
@@ -210,6 +210,7 @@ function fakeIncludeAdapter(config, { fiberFor }) {
       const rows = JSON.parse(await fs.readFile(config.path, 'utf8'));
       entries.clear();
       for (const row of rows) {
+        if (omitEntries.has(row.id)) continue;
         entries.set(row.id, { options: { name: row.name }, disabled: false, fiber: fiberFor(row.id) });
       }
     },
@@ -610,6 +611,45 @@ test('fallback keeps verifying later candidates after a host-level entry failure
   assert.equal(rows.get(working.record.id).status, 'active', 'the healthy candidate must not be left disabled by the broken one');
   assert.notEqual(rows.get(working.record.id).reason, 'superseded-by');
   assert.ok(session.mounted.has(working.record.id), 'the healthy candidate keeps a live, verified fiber');
+  await session.dispose();
+});
+
+test('fallback verifies each candidate even when a sibling live entry is missing', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  // Two replacement chains whose replacements both fail to apply. On the
+  // fallback pass D has a healthy fiber while E has no live entry at all
+  // (resolveEntry returns null). A missing sibling must not fail D as well.
+  const healthy = await createRecord({ toolName: 'healthy_policy_tool' });
+  const missing = await createRecord({ toolName: 'missing_policy_tool' });
+  const brokenReplacement = (toolName) => createRecord({
+    toolName,
+    inject: [],
+    requiredServices: [],
+    source: `export const name = '${toolName}';\nexport function apply() { throw new Error('${toolName} exploded'); }\n`,
+  });
+  const a = await brokenReplacement('broken_a_tool');
+  const c = await brokenReplacement('broken_c_tool');
+  await writeIndex([
+    { ...healthy.record, supersededBy: { acp: supersedeMarker(c.record) } },
+    c.record,
+    { ...missing.record, supersededBy: { acp: supersedeMarker(a.record) } },
+    a.record,
+  ]);
+
+  const mountInclude = async (_ctx, config) => fakeIncludeAdapter(config, {
+    fiberFor: (rowId) => {
+      if (rowId === `shared-${a.record.id}` || rowId === `shared-${c.record.id}`) return fakeFiber({ failApply: true });
+      return fakeFiber();
+    },
+    omitEntries: new Set([`shared-${missing.record.id}`]),
+  });
+  const session = await mountSession(await boot(), dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(rows.get(missing.record.id).status, 'failed');
+  assert.equal(rows.get(missing.record.id).reason, 'include-unavailable');
+  assert.equal(rows.get(healthy.record.id).status, 'active', 'a missing sibling entry must not fail a healthy candidate');
+  assert.ok(session.mounted.has(healthy.record.id), 'the healthy candidate keeps a live, verified fiber');
   await session.dispose();
 });
 
