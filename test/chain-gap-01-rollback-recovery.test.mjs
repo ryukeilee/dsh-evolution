@@ -235,6 +235,39 @@ test('a failed receipt write leaves a retryable intent, not a reopenable canary'
   assert.equal(result.published, 1);
 });
 
+test('an unreadable rollback intent blocks recovery, live canary advancement and the doctor', async (t) => {
+  const env = await scene(t);
+  const sidecarDir = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
+  await fs.mkdir(sidecarDir, { recursive: true });
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  await assert.rejects(core.observeCanary(regressionArgs, execFor()));
+  const intentPath = path.join(env.paths.promotionStateDir, 'rollback-intent.json');
+  // A directory at the intent path makes reads fail with EISDIR even for a
+  // privileged test process; ENOENT is the only "no intent started" signal.
+  await fs.rm(intentPath, { force: true });
+  await fs.mkdir(intentPath, { recursive: true });
+  t.after(async () => {
+    await fs.rm(intentPath, { recursive: true, force: true }).catch(() => {});
+    await fs.rm(sidecarDir, { recursive: true, force: true }).catch(() => {});
+  });
+  await assert.rejects(recoverInterruptedPromotion(env.paths), /intent is unreadable/);
+  await assert.rejects(core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:unreadable-intent', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor()), /intent is unreadable/);
+  const diagPaths = { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths };
+  const report = await collectDiagnostics({ dshHome: env.root, paths: diagPaths });
+  const check = report.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(check.level, 'blocked');
+  assert.equal(check.evidence.rollbackIntent, 'unreadable', JSON.stringify(check.evidence));
+});
+
 test('a trimmed receipt still carries the probe applicability the live publisher used', async (t) => {
   const env = await scene(t);
   const otherVersions = { dsh: '0.2.22', cordis: '4.1.0', evolution: '0.2.22' };
@@ -258,6 +291,35 @@ test('a trimmed receipt still carries the probe applicability the live publisher
   const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
   assert.equal(recovery.duplicates, 1, JSON.stringify(recovery));
   assert.equal(recovery.published, 0, 'no second conclusion under the proposal versions');
+  assert.equal(findConclusion(env).best?.decision, 'regression');
+});
+
+test('applicability extras are projected out of the durable receipt', async (t) => {
+  const env = await scene(t);
+  const sentinel = 'sk-abcdefghijklmnopqrstuvwxyz123456';
+  const probeVersions = { ...APPLICABILITY, token: sentinel, extra: 'x'.repeat(3 * 1024 * 1024) };
+  const proposal = {
+    ...env.proposal,
+    applicability: { ...APPLICABILITY, token: sentinel },
+    successMetrics: Array.from({ length: 40 }, (_, i) => `metric-${i}-${'x'.repeat(60000)}`),
+  };
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal, observations: [], latestObservation: { probe: { versions: probeVersions } },
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  const result = await core.observeCanary(regressionArgs, execFor());
+  assert.equal(result.phase, 'rolled-back');
+  const sidecar = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
+  const text = await fs.readFile(sidecar, 'utf8');
+  assert.equal(text.includes(sentinel), false, 'credential-shaped version extras are not persisted');
+  assert.ok((await fs.stat(sidecar)).size < 2 * 1024 * 1024);
+  const receipt = await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT);
+  assert.deepEqual(receipt.latestObservation.probe.versions, APPLICABILITY);
+  assert.deepEqual(receipt.proposal.applicability, APPLICABILITY);
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.duplicates + recovery.published, 1, JSON.stringify(recovery));
   assert.equal(findConclusion(env).best?.decision, 'regression');
 });
 
