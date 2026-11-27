@@ -123,6 +123,33 @@ exec "${nested}" "$@"
   assert.deepEqual(result.candidates.filter((candidate) => candidate.isDsh).map((candidate) => candidate.version).sort(), ['1.0.0', '2.0.0']);
 });
 
+test('the whitelisted installed wrapper shape exposes Desktop and Node branches without choosing one', (t) => {
+  const dir = tmp(t, 'host-res-whitelisted-wrapper-');
+  const nodeHost = makeDshPackage(path.join(dir, 'node-host'), '0.2.2-rc.1');
+  const asar = path.join(dir, 'desktop.asar');
+  makeAsar(asar, [
+    { internalPath: 'dsh/node_modules/@deepseek-ai/dsh/package.json', value: { name: '@deepseek-ai/dsh', version: '0.2.2-rc.5' } },
+  ]);
+  const desktopEntry = `${asar}/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js`;
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+case "$1" in --profile=*) profile=\${1#--profile=} ;; esac
+if [ "$profile" = 'acp' ]; then
+  exec "${process.execPath}" "${nodeHost.bin}" "$@"
+fi
+ELECTRON_RUN_AS_NODE=1 exec "/mock/DeepSeek Harness" --expose-internals "${desktopEntry}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+
+  // This is the explicit --dsh-cli input domain. Both terminal hosts remain
+  // visible; branch order must not silently choose the profile's host.
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected.source, 'argument');
+  assert.deepEqual(result.candidates.filter((candidate) => candidate.isDsh).map((candidate) => candidate.version).sort(), ['0.2.2-rc.1', '0.2.2-rc.5']);
+  assert.equal(result.alternatives.length, 1);
+  assert.equal(result.alternatives[0].hostFacts.dsh, '0.2.2-rc.5');
+});
+
 test('a one-line case that only assigns a variable does not hide a direct exec target', (t) => {
   const dir = tmp(t, 'host-res-inline-assignment-');
   const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
