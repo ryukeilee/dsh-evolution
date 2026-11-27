@@ -280,7 +280,25 @@ test('doctor stays ok for absent projection with no records, but degrades a dama
   const check = damagedReport.checks.find((row) => row.id === 'promotion.usage');
   assert.equal(check.level, 'degraded');
   assert.equal(check.evidence.status, 'invalid');
-  assert.match(check.remediation, /--assessments/);
+  // No index means the producer cannot converge; the guidance must not tell the
+  // operator to replace the damaged file with another incomplete snapshot.
+  assert.doesNotMatch(check.remediation, /capability-usage\.mjs/);
+  assert.match(check.remediation, /publication index/);
+  fs.rmSync(path.join(paths.dataRoot, 'shared-plugins', 'usage.json'));
+  const repaired = await collectDiagnostics({ home: root, paths });
+  assert.equal(repaired.checks.find((row) => row.id === 'promotion.usage').level, 'ok');
+});
+
+test('a non-boolean completeness flag is damage, not an implicit true', async (t) => {
+  const env = await fixture(t, 'flag-type');
+  await writeProjection(env, { complete: 'false' });
+  const { loaded, stable } = await reviewed(env);
+  assert.equal(loaded.evidence.status, 'invalid');
+  assert.equal(loaded.evidence.reason, 'complete-type');
+  assert.deepEqual(usageActions(stable).map((row) => row.code), [`${USAGE_PROJECTION_ACTION_PREFIX}invalid`]);
+  const check = await doctorUsage(env);
+  assert.equal(check.level, 'degraded');
+  assert.equal(check.evidence.reason, 'complete-type');
 });
 
 test('a projection that omits a published record is incomplete, not complete', async (t) => {
@@ -373,8 +391,15 @@ test('the supplement command does not let a shell expand a literal $USER in the 
   fs.mkdirSync(path.join(dataRoot, 'shared-plugins'), { recursive: true });
   const command = usageProjectionRemediation({ scriptPath: usageProducerScriptPath(), dataRoot }).command;
   assert.ok(command.includes(`--data-root '${dataRoot}'`), command);
-  assert.ok(command.includes('--home "$DSH_HOME"'), command);
-  assert.ok(command.includes('--assessments "$ASSESSMENTS_FILE"'), command);
+  assert.ok(command.includes('--home "${DSH_HOME:?'), command);
+  assert.ok(command.includes('--assessments "${ASSESSMENTS_FILE:?'), command);
+  // Missing required variables must abort before anything is written.
+  const unset = spawnSync('sh', ['-c', command], {
+    encoding: 'utf8',
+    env: { ...process.env, DSH_HOME: '', ASSESSMENTS_FILE: '' },
+  });
+  assert.notEqual(unset.status, 0);
+  assert.equal(fs.existsSync(path.join(dataRoot, 'shared-plugins', 'usage.json')), false);
   const run = spawnSync('sh', ['-c', command], {
     encoding: 'utf8',
     env: { ...process.env, DSH_HOME: home, ASSESSMENTS_FILE: assessments },
