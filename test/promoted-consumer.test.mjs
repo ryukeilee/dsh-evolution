@@ -196,6 +196,51 @@ async function mountSession(ctx, dataRoot, overrides = {}) {
   return { ...created.session, mount: created.mount, dispose: created.dispose };
 }
 
+/**
+ * A fake Include adapter whose live entries come from the composition the
+ * consumer wrote. Tests choose each row's fiber, so a host-level tree defect
+ * (a row with no fiber) and a plugin's own apply failure can coexist in the
+ * same fallback pass without executing real plugin code.
+ */
+function fakeIncludeAdapter(config, { fiberFor }) {
+  const entries = new Map();
+  return {
+    capabilities: { entryResolver: true, treeAwait: true, liveRootEntries: true },
+    async refresh() {
+      const rows = JSON.parse(await fs.readFile(config.path, 'utf8'));
+      entries.clear();
+      for (const row of rows) {
+        entries.set(row.id, { options: { name: row.name }, disabled: false, fiber: fiberFor(row.id) });
+      }
+    },
+    resolveEntry(rowId) {
+      return entries.get(rowId) ?? null;
+    },
+    async dispose() {},
+  };
+}
+
+/** A fiber that passes the consumer's live verification, or fails its apply. */
+function fakeFiber({ failApply = false } = {}) {
+  return {
+    uid: 1,
+    store: {},
+    inject: { tools: {} },
+    ctx: { get: () => ({}) },
+    async await() {
+      if (failApply) throw new Error('plugin exploded');
+    },
+  };
+}
+
+const supersedeMarker = (record) => ({
+  recordId: record.id,
+  sourceSha256: record.sourceSha256,
+  approvalSha256: 'c'.repeat(64),
+  evidenceSha256: 'd'.repeat(64),
+  at: '2026-11-24T15:00:00.000Z',
+});
+
 test('eligible record mounts through the official Include and reports active', async (t) => {
   const { dataRoot, paths, createRecord, writeIndex, readComposition } = await fixture(t);
   const ctx = await boot();
@@ -524,6 +569,85 @@ test('fallback walks back a chain until it finds a candidate that applies', asyn
   assert.equal(rows.get(working.record.id).status, 'active', 'the oldest working policy is restored in this start');
   assert.deepEqual(ctx.tools.schemas().map((definition) => definition.name), ['original_policy_tool']);
   await session.dispose();
+});
+
+test('fallback keeps verifying later candidates after a host-level entry failure', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  // A supersedes B and C supersedes D. Both replacements fail to apply, so B
+  // and D become fallback candidates in the same pass. B's live entry has no
+  // fiber (a host-level tree defect); D's fiber is healthy.
+  const noFiber = await createRecord({ toolName: 'no_fiber_tool' });
+  const working = await createRecord({ toolName: 'working_policy_tool' });
+  const brokenReplacement = (toolName) => createRecord({
+    toolName,
+    inject: [],
+    requiredServices: [],
+    source: `export const name = '${toolName}';\nexport function apply() { throw new Error('${toolName} exploded'); }\n`,
+  });
+  const a = await brokenReplacement('broken_a_tool');
+  const c = await brokenReplacement('broken_c_tool');
+  await writeIndex([
+    { ...noFiber.record, supersededBy: { acp: supersedeMarker(a.record) } },
+    a.record,
+    { ...working.record, supersededBy: { acp: supersedeMarker(c.record) } },
+    c.record,
+  ]);
+
+  const mountInclude = async (_ctx, config) => fakeIncludeAdapter(config, {
+    fiberFor: (rowId) => {
+      if (rowId === `shared-${a.record.id}` || rowId === `shared-${c.record.id}`) return fakeFiber({ failApply: true });
+      if (rowId === `shared-${noFiber.record.id}`) return null;
+      return fakeFiber();
+    },
+  });
+  const session = await mountSession(await boot(), dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(rows.get(a.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(c.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(noFiber.record.id).status, 'failed');
+  assert.equal(rows.get(noFiber.record.id).reason, 'include-unavailable', 'a host-level entry failure is non-sticky');
+  assert.equal(rows.get(working.record.id).status, 'active', 'the healthy candidate must not be left disabled by the broken one');
+  assert.notEqual(rows.get(working.record.id).reason, 'superseded-by');
+  assert.ok(session.mounted.has(working.record.id), 'the healthy candidate keeps a live, verified fiber');
+  await session.dispose();
+});
+
+test('a first Include refresh failure does not keep the replacement sticky on the next start', async (t) => {
+  const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
+  const previous = await createRecord({ toolName: 'old_policy_tool' });
+  const replacement = await createRecord({ toolName: 'new_policy_tool' });
+  await writeIndex([
+    { ...previous.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+  ]);
+
+  let refreshCalls = 0;
+  const failingMount = async () => ({
+    capabilities: { entryResolver: true, treeAwait: true, liveRootEntries: true },
+    async refresh() {
+      refreshCalls += 1;
+      throw new Error('Include refresh unavailable');
+    },
+    resolveEntry: () => null,
+    async dispose() {},
+  });
+  const first = await mountSession(await boot(), dataRoot, { mountInclude: failingMount });
+  assert.equal(refreshCalls, 1);
+  assert.equal(new Map(first.rows.map((row) => [row.id, row])).get(replacement.record.id).status, 'failed');
+  await first.dispose();
+
+  const second = await mountSession(await boot(), dataRoot, {
+    mountInclude: (_ctx, config) => fakeIncludeAdapter(config, { fiberFor: () => fakeFiber() }),
+  });
+  const rows = new Map(second.rows.map((row) => [row.id, row]));
+  assert.equal(rows.get(replacement.record.id).status, 'active', 'the replacement is retried after a host refresh failure');
+  assert.equal(rows.get(previous.record.id).status, 'disabled');
+  assert.equal(rows.get(previous.record.id).reason, 'superseded-by');
+  assert.ok(second.mounted.has(replacement.record.id));
+  const state = await readConsumerState(paths, 'acp');
+  assert.equal(state.state.plugins.find((row) => row.id === replacement.record.id).status, 'active');
+  await second.dispose();
 });
 
 test('a second start over the same data root mounts once and never duplicates', async (t) => {
@@ -1002,7 +1126,7 @@ test('a host that is already tearing down cannot publish include-unavailable ove
 /**
  * The same question on the success path: the mount settles, the shutdown lands
  * while the capability/service probes and the refresh run, so the computed rows
- * describe the teardown (`missing-service`, `include-refresh-failed`) instead of
+ * describe the teardown (`missing-service`, `include-unavailable`) instead of
  * the live profile. Nothing may be published from that session.
  */
 test('a session that loses its context after a successful mount publishes nothing', async (t) => {
