@@ -51,9 +51,9 @@ import path from 'node:path';
 import { resolveEvolutionPaths } from '../lib/diagnostics.js';
 import {
   annotateSharedRecord,
-  consumerNeedsRestart,
   consumerRestartGuidance,
   consumerRevocationGuidance,
+  consumerEligibilityGuidance,
   pendingRestartDetails,
   readConsumerState,
   readDisableState,
@@ -177,16 +177,20 @@ async function commandList(options) {
   const index = await readSharedIndex(paths);
   const disable = await readDisableState(paths);
   const consumers = {};
+  const consumerStates = {};
   for (const profile of SHARED_CONSUMER_PROFILES) {
     const state = await readConsumerState(paths, profile);
+    if (state.state) consumerStates[profile] = state.state;
     consumers[profile] = {
       status: state.status,
       updatedAt: state.state?.updatedAt ?? null,
       observedIndexUpdatedAt: state.state?.observedIndexUpdatedAt ?? null,
-      needsRestart: Boolean(state.state) && consumerNeedsRestart(index.updatedAt, state.state),
       plugins: (state.state?.plugins || []).map((row) => ({ id: row.id, status: row.status, reason: row.reason ?? null, activatedAt: row.activatedAt ?? null })),
     };
   }
+  const restartDetails = pendingRestartDetails(index.updatedAt, index.records, consumerStates, disable.entries);
+  const restartProfiles = new Set(restartDetails.map((row) => row.profile));
+  for (const profile of SHARED_CONSUMER_PROFILES) consumers[profile].needsRestart = restartProfiles.has(profile);
   const records = [];
   for (const record of index.records) {
     let source = 'verified';
@@ -458,6 +462,7 @@ async function withRestartGuidance(options, result) {
   const guidance = [
     consumerRestartGuidance(details.filter((row) => row.reason === 'index-stale').map((row) => row.profile)),
     consumerRevocationGuidance(details.filter((row) => row.reason === 'revoked-active-mount').map((row) => row.profile)),
+    consumerEligibilityGuidance(details.filter((row) => row.reason === 'eligibility-restored').map((row) => row.profile)),
   ].filter(Boolean).join(' ');
   return {
     ...result,

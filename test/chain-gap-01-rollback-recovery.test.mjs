@@ -14,6 +14,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   EvolutionOrchestrator,
+  externalizeEventBridgeEvidence,
   recoverInterruptedPromotion,
   readEvidenceSnapshot,
   snapshotEvidenceFromRecord,
@@ -148,11 +149,13 @@ test('a crash after rollback and before any conclusion rebuilds the terminal rol
 
 test('a crash between receipt write and journal cleanup finishes cleanup without rolling back twice', async (t) => {
   const env = await scene(t);
-  // refresh() is the last rollback step before the receipt is written. Make
-  // the following state-directory removal fail by denying writes on it.
-  env.paths.promotionRuntime = {
-    ...unitPromotionRuntime(),
-    refresh: async () => { await fs.chmod(env.paths.promotionStateDir, 0o500); },
+  // Interrupt the atomic move that publishes the active state directory's
+  // absence. The durable receipt already exists, so the journal must remain a
+  // cleanup-only scene and the live canary must refuse to advance it.
+  const originalRename = fs.rename;
+  fs.rename = async function observedRename(from, to) {
+    if (String(from) === env.paths.promotionStateDir) throw new Error('simulated cleanup rename failure');
+    return originalRename.call(this, from, to);
   };
   const core = orchestratorFor(env);
   core.experiments.set(EXPERIMENT, {
@@ -160,7 +163,11 @@ test('a crash between receipt write and journal cleanup finishes cleanup without
     proposal: env.proposal, observations: [], latestObservation: {},
     canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
   });
-  await assert.rejects(core.observeCanary(regressionArgs, execFor()));
+  try {
+    await assert.rejects(core.observeCanary(regressionArgs, execFor()), /simulated cleanup rename failure/);
+  } finally {
+    fs.rename = originalRename;
+  }
   const receipt = await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT);
   assert.ok(receipt, 'the receipt landed before the interrupted cleanup');
   assert.equal(receipt.state, 'rolled-back');
@@ -170,7 +177,13 @@ test('a crash between receipt write and journal cleanup finishes cleanup without
     barrier: { id: 'window:after-receipt', reached: true },
     startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
   }, execFor()), /already rolled back/, 'the live canary reader must not advance a journal whose rollback completed');
-  await fs.chmod(env.paths.promotionStateDir, 0o700);
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  const check = report.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(check.evidence.rollbackReceipt, 'ready');
+  assert.match(check.summary, /completed/);
+  assert.match(check.summary, /cleanup/);
   const recovered = await recoverInterruptedPromotion(env.paths);
   assert.deepEqual(recovered, { recovered: true, status: 'rolled-back-cleaned', experimentId: EXPERIMENT });
   assert.equal(await exists(env.paths.promotionStateDir), false);
@@ -205,19 +218,52 @@ test('the rollback receipt is bounded and credential-redacted before it reaches 
   assert.equal(recovery.published, 0);
 });
 
+test('event evidence externalization preserves a pending rollback receipt terminal identity', async (t) => {
+  const env = await scene(t);
+  const receipt = {
+    version: 1, experimentId: EXPERIMENT, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z',
+    source: 'rollback-recovery-receipt',
+    rollbackResult: { ok: true, status: 'rolled-back-to-last-known-good' },
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z', reasons: [] },
+    proposal: env.proposal,
+  };
+  await fs.writeFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`), `${JSON.stringify(receipt, null, 2)}\n`);
+  const result = await externalizeEventBridgeEvidence(env.paths, [{
+    experimentId: EXPERIMENT,
+    evidence: { source: 'event-bridge', observations: [{ barrierId: 'retained' }], latestObservation: { at: receipt.rolledBackAt } },
+  }]);
+  assert.equal(result.written, 1);
+  const merged = await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT);
+  assert.equal(merged.experimentId, EXPERIMENT);
+  assert.equal(merged.state, 'rolled-back');
+  assert.equal(merged.rolledBackAt, receipt.rolledBackAt);
+  assert.deepEqual(merged.rollbackResult, receipt.rollbackResult);
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.published, 1, JSON.stringify(recovery));
+});
+
 test('a failed receipt write leaves a retryable intent, not a reopenable canary', async (t) => {
   const env = await scene(t);
-  // A directory at the receipt path makes the durable write fail EISDIR after
-  // the rollback already restored the targets.
-  const sidecarDir = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
-  await fs.mkdir(sidecarDir, { recursive: true });
+  // Fail the atomic receipt publish after the rollback restored its targets.
+  // The receipt path itself stays absent, so live canary/doctor reads can still
+  // classify the retryable intent rather than an unreadable completed receipt.
+  const sidecarPath = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
+  const originalRename = fs.rename;
+  fs.rename = async function observedRename(from, to) {
+    if (String(to) === sidecarPath) throw new Error('simulated receipt write failure');
+    return originalRename.call(this, from, to);
+  };
   const core = orchestratorFor(env);
   core.experiments.set(EXPERIMENT, {
     id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
     proposal: env.proposal, observations: [], latestObservation: {},
     canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
   });
-  await assert.rejects(core.observeCanary(regressionArgs, execFor()));
+  try {
+    await assert.rejects(core.observeCanary(regressionArgs, execFor()), /simulated receipt write failure/);
+  } finally {
+    fs.rename = originalRename;
+  }
   assert.equal(await exists(path.join(env.paths.promotionStateDir, 'rollback-intent.json')), true);
   assert.equal((await readJournal(env.paths)).phase, 'canary-observing');
   assert.equal(await fs.readFile(env.paths.compositionPath, 'utf8'), '[]\n', 'the targets were already rolled back');
@@ -231,9 +277,10 @@ test('a failed receipt write leaves a retryable intent, not a reopenable canary'
   });
   const pendingCheck = pendingReport.checks.find((row) => row.id === 'promotion.journal');
   assert.equal(pendingCheck.evidence.rollbackIntent, 'ready');
-  assert.match(pendingCheck.summary, /cleanup is pending/);
+  assert.equal(pendingCheck.evidence.rollbackReceipt, 'absent');
+  assert.match(pendingCheck.summary, /was started/);
+  assert.doesNotMatch(pendingCheck.summary, /completed and its durable receipt is present/);
   assert.match(pendingCheck.remediation, /Restart/);
-  await fs.rm(sidecarDir, { recursive: true, force: true });
   const recovered = await recoverInterruptedPromotion(env.paths);
   assert.equal(recovered.status, 'rolled-back', JSON.stringify(recovered));
   assert.equal(await exists(env.paths.promotionStateDir), false);
@@ -267,26 +314,143 @@ test('an incomplete rollback intent is invalid, not a restartable rollback', asy
   assert.equal(await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT), null);
 });
 
-test('an unreadable rollback intent blocks recovery, live canary advancement and the doctor', async (t) => {
+test('a rollback intent without rebuild identity is invalid before any target is touched', async (t) => {
   const env = await scene(t);
-  const sidecarDir = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
-  await fs.mkdir(sidecarDir, { recursive: true });
+  const terminal = {
+    experimentId: EXPERIMENT, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z',
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z' },
+    proposal: env.proposal,
+  };
+  const variants = [
+    { ...terminal, proposal: undefined },
+    { ...terminal, proposal: { ...env.proposal, applicability: undefined } },
+    { ...terminal, proposal: { ...env.proposal, target: '' } },
+    { ...terminal, rolledBackAt: '' },
+    { ...terminal, decision: { kind: 'benefit' } },
+  ];
+  for (const terminalSnapshot of variants) {
+    const intent = { version: 1, experimentId: EXPERIMENT, phase: 'rollback-started', terminalSnapshot };
+    await fs.writeFile(path.join(env.paths.promotionStateDir, 'rollback-intent.json'), `${JSON.stringify(intent, null, 2)}\n`);
+    await assert.rejects(recoverInterruptedPromotion(env.paths), /intent.*invalid/);
+    assert.equal(await exists(path.join(env.paths.promotionStateDir, 'journal.json')), true);
+    assert.equal(await fs.readFile(env.paths.compositionPath, 'utf8').then((text) => text.includes('evolution-promoted-')), true,
+      'invalid intent must not start a rollback');
+  }
+});
+
+test('an ordinary canary sidecar is not mistaken for a damaged rollback receipt', async (t) => {
+  const env = await scene(t);
+  await fs.writeFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`), `${JSON.stringify(
+    snapshotEvidenceFromRecord({ id: EXPERIMENT, proposal: env.proposal }), null, 2,
+  )}\n`);
+  const pending = await recoverInterruptedPromotion(env.paths);
+  assert.equal(pending.status, 'canary-pending');
   const core = orchestratorFor(env);
   core.experiments.set(EXPERIMENT, {
     id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
     proposal: env.proposal, observations: [], latestObservation: {},
     canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
   });
-  await assert.rejects(core.observeCanary(regressionArgs, execFor()));
+  const observed = await core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:ordinary-sidecar', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor());
+  assert.equal(observed.phase, 'canary-observing');
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  const check = report.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(check.evidence.rollbackReceipt, 'not-rollback');
+  assert.equal(check.level, 'degraded');
+});
+
+test('an invalid completed receipt blocks cleanup even when the intent is valid', async (t) => {
+  const env = await scene(t);
+  const validTerminal = {
+    version: 1, experimentId: EXPERIMENT, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z',
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z' },
+    proposal: env.proposal,
+  };
+  await fs.writeFile(path.join(env.paths.promotionStateDir, 'rollback-intent.json'), `${JSON.stringify({
+    version: 1, experimentId: EXPERIMENT, phase: 'rollback-started', terminalSnapshot: validTerminal,
+  }, null, 2)}\n`);
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  const variants = [
+    { ...validTerminal, rolledBackAt: '' },
+    { ...validTerminal, decision: undefined },
+    { ...validTerminal, proposal: undefined },
+    { ...validTerminal, proposal: { ...env.proposal, applicability: undefined } },
+  ];
+  for (const receipt of variants) {
+    await fs.writeFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`), `${JSON.stringify(receipt, null, 2)}\n`);
+    await assert.rejects(recoverInterruptedPromotion(env.paths), /receipt.*invalid/);
+    await assert.rejects(core.observeCanary({
+      experimentId: EXPERIMENT,
+      barrier: { id: 'window:invalid-receipt', reached: true },
+      startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+    }, execFor()), /invalid rollback receipt/);
+    assert.equal(await exists(path.join(env.paths.promotionStateDir, 'journal.json')), true);
+    const report = await collectDiagnostics({
+      dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+    });
+    const check = report.checks.find((row) => row.id === 'promotion.journal');
+    assert.equal(check.level, 'blocked');
+    assert.equal(check.evidence.rollbackReceipt, 'invalid');
+    const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+    assert.equal(recovery.published, 0);
+    assert.deepEqual(recovery.skipped, [{ experimentId: EXPERIMENT, reason: 'invalid-rollback-receipt' }]);
+  }
+});
+
+test('an interrupted recursive cleanup leaves no active state directory and the receipt remains recoverable', async (t) => {
+  const env = await scene(t);
+  const originalRm = fs.rm;
+  let cleanupDir = null;
+  fs.rm = async function observedRm(target, options) {
+    if (String(target).startsWith(`${env.paths.promotionStateDir}.cleanup-`)) {
+      cleanupDir = String(target);
+      throw new Error('simulated cleanup interruption');
+    }
+    return originalRm.call(this, target, options);
+  };
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  try {
+    await assert.rejects(core.observeCanary(regressionArgs, execFor()), /simulated cleanup interruption/);
+  } finally {
+    fs.rm = originalRm;
+  }
+  assert.ok(cleanupDir);
+  assert.equal(await exists(env.paths.promotionStateDir), false, 'the active state path was atomically removed');
+  assert.equal(await exists(cleanupDir), true, 'the moved copy is the only interrupted cleanup residue');
+  assert.ok(await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT));
+  assert.deepEqual(await recoverInterruptedPromotion(env.paths), { recovered: false, status: 'none' });
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.published, 1, JSON.stringify(recovery));
+});
+
+test('an unreadable rollback intent blocks recovery, live canary advancement and the doctor', async (t) => {
+  const env = await scene(t);
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
   const intentPath = path.join(env.paths.promotionStateDir, 'rollback-intent.json');
   // A directory at the intent path makes reads fail with EISDIR even for a
   // privileged test process; ENOENT is the only "no intent started" signal.
-  await fs.rm(intentPath, { force: true });
   await fs.mkdir(intentPath, { recursive: true });
-  t.after(async () => {
-    await fs.rm(intentPath, { recursive: true, force: true }).catch(() => {});
-    await fs.rm(sidecarDir, { recursive: true, force: true }).catch(() => {});
-  });
   await assert.rejects(recoverInterruptedPromotion(env.paths), /intent is unreadable/);
   await assert.rejects(core.observeCanary({
     experimentId: EXPERIMENT,
