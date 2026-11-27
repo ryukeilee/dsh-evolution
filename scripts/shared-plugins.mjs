@@ -51,7 +51,10 @@ import path from 'node:path';
 import { resolveEvolutionPaths } from '../lib/diagnostics.js';
 import {
   annotateSharedRecord,
-  consumerNeedsRestart,
+  consumerRestartGuidance,
+  consumerRevocationGuidance,
+  consumerEligibilityGuidance,
+  pendingRestartDetails,
   readConsumerState,
   readDisableState,
   readPromotedPlugin,
@@ -174,16 +177,20 @@ async function commandList(options) {
   const index = await readSharedIndex(paths);
   const disable = await readDisableState(paths);
   const consumers = {};
+  const consumerStates = {};
   for (const profile of SHARED_CONSUMER_PROFILES) {
     const state = await readConsumerState(paths, profile);
+    if (state.state) consumerStates[profile] = state.state;
     consumers[profile] = {
       status: state.status,
       updatedAt: state.state?.updatedAt ?? null,
       observedIndexUpdatedAt: state.state?.observedIndexUpdatedAt ?? null,
-      needsRestart: Boolean(state.state) && consumerNeedsRestart(index.updatedAt, state.state),
       plugins: (state.state?.plugins || []).map((row) => ({ id: row.id, status: row.status, reason: row.reason ?? null, activatedAt: row.activatedAt ?? null })),
     };
   }
+  const restartDetails = pendingRestartDetails(index.updatedAt, index.records, consumerStates, disable.entries, disable.status);
+  const restartProfiles = new Set(restartDetails.map((row) => row.profile));
+  for (const profile of SHARED_CONSUMER_PROFILES) consumers[profile].needsRestart = restartProfiles.has(profile);
   const records = [];
   for (const record of index.records) {
     let source = 'verified';
@@ -436,6 +443,35 @@ async function commandRevokeSupersede(options) {
   };
 }
 
+/**
+ * Every command reports which consumer profiles have not loaded the index the
+ * command just changed. The predicate is the doctor's own, so a successful
+ * approve/supersede/disable/enable can never disagree with `promotion.sharing`.
+ */
+async function withRestartGuidance(options, result) {
+  if (!result || result.ok === false) return result;
+  const paths = pathsFor(options);
+  const [index, disable] = await Promise.all([readSharedIndex(paths), readDisableState(paths)]);
+  if (index.status !== 'ok' && index.status !== 'absent') return { ...result, pendingRestartProfiles: [] };
+  const states = {};
+  for (const profile of SHARED_CONSUMER_PROFILES) {
+    const state = await readConsumerState(paths, profile);
+    if (state.state) states[profile] = state.state;
+  }
+  const details = pendingRestartDetails(index.updatedAt, index.records, states, disable.entries, disable.status);
+  const guidance = [
+    consumerRestartGuidance(details.filter((row) => row.reason === 'index-stale').map((row) => row.profile)),
+    consumerRevocationGuidance(details.filter((row) => row.reason === 'revoked-active-mount').map((row) => row.profile)),
+    consumerEligibilityGuidance(details.filter((row) => row.reason === 'eligibility-restored').map((row) => row.profile)),
+  ].filter(Boolean).join(' ');
+  return {
+    ...result,
+    pendingRestartProfiles: [...new Set(details.map((row) => row.profile))],
+    pendingRestartDetails: details,
+    ...(guidance ? { restartGuidance: guidance } : {}),
+  };
+}
+
 async function main(argv) {
   const options = parseArgs(argv);
   if (options.help || !options.command || options.command === '--help' || options.command === '-h') { process.stdout.write(HELP); return 0; }
@@ -449,6 +485,7 @@ async function main(argv) {
   else if (options.command === 'supersede') result = await commandSupersede(options);
   else if (options.command === 'revoke-supersede') result = await commandRevokeSupersede(options);
   else throw new Error(`unknown command: ${options.command}`);
+  result = await withRestartGuidance(options, result);
   if (options.json) process.stdout.write(`${JSON.stringify(result)}\n`);
   else process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   return result.ok === false ? 2 : 0;

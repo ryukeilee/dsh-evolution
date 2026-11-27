@@ -1,0 +1,711 @@
+// DSH-EVOLUTION-CHAIN-GAP-01 / P2: a canary rollback can finish on disk and be
+// followed by a crash before any conclusion or archive was written. The durable
+// rollback receipt written before the journal is removed must let a fresh
+// process rebuild the terminal state and report the rollback; `rollback-failed`
+// must still keep its journal and produce no such receipt.
+//
+// Synthetic fixtures only (os.tmpdir()); no real DSH home is read or written.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import nodeFs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import {
+  EvolutionOrchestrator,
+  externalizeEventBridgeEvidence,
+  recoverInterruptedPromotion,
+  readEvidenceSnapshot,
+  snapshotEvidenceFromRecord,
+} from '../lib/orchestrator.js';
+import { openSharedExperience } from '../lib/shared-experience.js';
+import { collectDiagnostics, resolveEvolutionPaths, summarize } from '../lib/diagnostics.js';
+import { strategyFingerprint } from '../lib/experience-plan.js';
+import {
+  scratchRoot, promotionPaths, orchestratorContext, unitPromotionRuntime,
+  execFor, writeJournal, readJournal, exists,
+} from './orchestrator-durability-fixtures.mjs';
+import { promotionPlan, derivedPluginName } from './promotion-plan-fixture.mjs';
+
+const WORKER = path.join(path.dirname(fileURLToPath(import.meta.url)), 'chain-gap-01-rollback-worker.mjs');
+const EXPERIMENT = 'exp-chain-gap-01';
+const APPLICABILITY = Object.freeze({ dsh: '0.2.23', cordis: '4.1.0', evolution: '0.2.23' });
+const TARGET = 'tool:chain-gap-01';
+const STRATEGY = 'prewarm the cache before the first read';
+const FINGERPRINT = strategyFingerprint(TARGET, STRATEGY);
+
+async function scene(t, { corruptBackup = false } = {}) {
+  const root = await scratchRoot('chain-gap-rollback');
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const paths = promotionPaths(root);
+  paths.promotionRuntime = unitPromotionRuntime();
+  const pluginName = derivedPluginName(EXPERIMENT);
+  const pluginPath = path.join(paths.pluginRoot, pluginName);
+  await fs.mkdir(pluginPath, { recursive: true });
+  await fs.mkdir(paths.archiveDir, { recursive: true });
+  await fs.mkdir(path.join(paths.promotionStateDir, 'backups'), { recursive: true });
+  const rowId = `evolution-promoted-${pluginName.slice(-12)}`;
+  const row = `- id: ${rowId}\n  name: "file://${pluginPath}"\n`;
+  await fs.writeFile(paths.compositionPath, row);
+  const records = promotionPlan(paths, EXPERIMENT, {
+    [paths.compositionPath]: { existed: true, before: '[]\n', after: row },
+  });
+  await fs.writeFile(path.join(paths.promotionStateDir, 'backups', records[0].backup), corruptBackup ? 'corrupt\n' : '[]\n');
+  const proposal = {
+    owner: 'durability-owner', why: 'rollback crash window', target: TARGET,
+    strategy: STRATEGY, strategyFingerprint: FINGERPRINT, applicability: APPLICABILITY,
+    impactScope: ['isolated-test'], successMetrics: ['regression recorded'],
+    createdAt: '2026-11-27T00:00:00.000Z',
+  };
+  const record = {
+    id: EXPERIMENT, ownerId: 'durability-owner', proposal, observations: [], latestObservation: {},
+    runtimeRecovered: true,
+  };
+  const journal = {
+    version: 1,
+    phase: 'canary-observing',
+    experimentId: EXPERIMENT,
+    ownerId: 'durability-owner',
+    proposal,
+    stateDir: paths.promotionStateDir,
+    records,
+    evidenceSnapshot: snapshotEvidenceFromRecord(record),
+    canary: { promotionTimestamp: null, healthObservationWindow: 2, startupVerified: false, observations: [] },
+    durable: { pluginName, pluginPath, rowId },
+  };
+  await writeJournal(paths, journal);
+  const store = openSharedExperience(path.join(root, 'shared-experience'));
+  t.after(() => { try { store.close(); } catch { /* already closed */ } });
+  return { root, paths, store, proposal };
+}
+
+function orchestratorFor(env, warnings = []) {
+  return new EvolutionOrchestrator(orchestratorContext(warnings), {
+    ...env.paths, startupDrift: false, sharedExperience: env.store,
+    eventBridge: { emit: () => ({}) },
+  });
+}
+
+function findConclusion(env) {
+  return env.store.findConclusions({
+    target: TARGET, strategyFingerprint: FINGERPRINT, applicability: APPLICABILITY,
+  });
+}
+
+const regressionArgs = {
+  experimentId: EXPERIMENT,
+  metricRegression: true,
+  barrier: { id: 'window:regression', reached: true },
+  startupVerified: true,
+  componentHealth: 'active',
+  dependenciesPresent: true,
+};
+
+test('a crash after rollback and before any conclusion rebuilds the terminal rollback state', async (t) => {
+  const env = await scene(t);
+  const child = spawnSync(process.execPath, ['--max-old-space-size=4096', WORKER, env.root, EXPERIMENT], { encoding: 'utf8' });
+  assert.equal(child.signal, 'SIGKILL', `child must die inside archive(): ${child.stdout}${child.stderr}`);
+  assert.equal(await exists(path.join(env.root, 'crash-marker')), true);
+  assert.equal(await exists(env.paths.promotionStateDir), false, 'rollback removed the journal before the crash');
+  assert.equal(await exists(path.join(env.paths.archiveDir, `${EXPERIMENT}.md`)), false, 'archive was not written before the crash');
+  // A promotion draft archive can survive the crash; mere existence must not
+  // be mistaken for the terminal rollback rendering.
+  await fs.writeFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.md`), `# Evolution experiment ${EXPERIMENT}\n- state: promoting\n\n## Proposal\n- why: draft\n- target: ${TARGET}\n- impact: test\n- success metrics: test\n`);
+  assert.equal(findConclusion(env).best?.decision ?? null, null, 'no conclusion was written before the crash');
+
+  const receipt = await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT);
+  assert.ok(receipt, 'a durable rollback receipt survives the crash');
+  assert.equal(receipt.state, 'rolled-back');
+  assert.equal(receipt.decision?.kind, 'regression');
+  assert.equal(receipt.proposal?.target, TARGET);
+
+  const warnings = [];
+  const recovery = await orchestratorFor(env, warnings).reconcileRollbackConclusions();
+  assert.equal(recovery.published, 1, `${JSON.stringify(recovery)} warnings=${JSON.stringify(warnings)}`);
+  assert.deepEqual(recovery.rollbacks, [{ experimentId: EXPERIMENT, state: 'rolled-back' }]);
+  assert.equal(await exists(path.join(env.paths.archiveDir, `${EXPERIMENT}.md`)), true, 'terminal archive rebuilt');
+  const archiveText = await fs.readFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.md`), 'utf8');
+  assert.match(archiveText, /- state: rolled-back/);
+  assert.match(archiveText, /rolled-back-to-last-known-good/, 'the bounded failure detail is restored');
+  const conclusion = findConclusion(env);
+  assert.equal(conclusion.best?.decision, 'regression');
+  assert.equal(conclusion.best?.lastSeen, receipt.decision.at);
+
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: resolveEvolutionPaths({ dshHome: env.root }),
+    config: { rollbackConclusionReconciliation: recovery },
+  });
+  assert.deepEqual(report.rollbackRecovery.recovered, [{ experimentId: EXPERIMENT, state: 'rolled-back' }]);
+  assert.match(summarize(report), new RegExp(`recovered rollback\\(s\\): ${EXPERIMENT}`));
+
+  // Repeating startup recovery must not publish a second fact or rewrite the
+  // rebuilt archive: the same conclusion identity stays a duplicate.
+  const again = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(again.published, 0);
+  assert.equal(again.duplicates, 1);
+  assert.equal(again.archived, 0);
+});
+
+test('a crash between receipt write and journal cleanup finishes cleanup without rolling back twice', async (t) => {
+  const env = await scene(t);
+  // Interrupt the atomic move that publishes the active state directory's
+  // absence. The durable receipt already exists, so the journal must remain a
+  // cleanup-only scene and the live canary must refuse to advance it.
+  const originalRename = fs.rename;
+  fs.rename = async function observedRename(from, to) {
+    if (String(from) === env.paths.promotionStateDir) throw new Error('simulated cleanup rename failure');
+    return originalRename.call(this, from, to);
+  };
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  try {
+    await assert.rejects(core.observeCanary(regressionArgs, execFor()), /simulated cleanup rename failure/);
+  } finally {
+    fs.rename = originalRename;
+  }
+  const receipt = await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT);
+  assert.ok(receipt, 'the receipt landed before the interrupted cleanup');
+  assert.equal(receipt.state, 'rolled-back');
+  assert.equal((await readJournal(env.paths)).phase, 'canary-observing');
+  await assert.rejects(core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:after-receipt', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor()), /already rolled back/, 'the live canary reader must not advance a journal whose rollback completed');
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  const check = report.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(check.evidence.rollbackReceipt, 'ready');
+  assert.match(check.summary, /completed/);
+  assert.match(check.summary, /cleanup/);
+  const recovered = await recoverInterruptedPromotion(env.paths);
+  assert.deepEqual(recovered, { recovered: true, status: 'rolled-back-cleaned', experimentId: EXPERIMENT });
+  assert.equal(await exists(env.paths.promotionStateDir), false);
+  assert.equal((await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT)).rolledBackAt, receipt.rolledBackAt,
+    'cleanup did not start a second rollback');
+  const result = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(result.published, 1);
+});
+
+test('the rollback receipt is bounded and credential-redacted before it reaches disk', async (t) => {
+  const env = await scene(t);
+  const sentinel = 'sk-abcdefghijklmnopqrstuvwxyz123456';
+  const oversized = `${sentinel}${'x'.repeat(3 * 1024 * 1024)}`;
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [{ barrierId: oversized }],
+    latestObservation: { barrierId: oversized, componentHealth: sentinel },
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  const result = await core.observeCanary(regressionArgs, execFor());
+  assert.equal(result.phase, 'rolled-back');
+  const sidecar = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
+  const stat = await fs.stat(sidecar);
+  assert.ok(stat.size < 2 * 1024 * 1024, `receipt must fit the startup reader bound: ${stat.size}`);
+  const text = await fs.readFile(sidecar, 'utf8');
+  assert.equal(text.includes(sentinel), false, 'no raw credential shape reaches the receipt');
+  // The live path already published the conclusion before this normal run;
+  // startup reconciliation must recognise it as the same fact, not a second one.
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.duplicates, 1, JSON.stringify(recovery));
+  assert.equal(recovery.published, 0);
+});
+
+test('event evidence externalization preserves a pending rollback receipt terminal identity', async (t) => {
+  const env = await scene(t);
+  const receipt = {
+    version: 1, experimentId: EXPERIMENT, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z',
+    source: 'rollback-recovery-receipt',
+    rollbackResult: { ok: true, status: 'rolled-back-to-last-known-good' },
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z', reasons: [] },
+    proposal: env.proposal,
+  };
+  await fs.writeFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`), `${JSON.stringify(receipt, null, 2)}\n`);
+  const result = await externalizeEventBridgeEvidence(env.paths, [{
+    experimentId: EXPERIMENT,
+    evidence: { source: 'event-bridge', observations: [{ barrierId: 'retained' }], latestObservation: { at: receipt.rolledBackAt } },
+  }]);
+  assert.equal(result.written, 1);
+  const merged = await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT);
+  assert.equal(merged.experimentId, EXPERIMENT);
+  assert.equal(merged.state, 'rolled-back');
+  assert.equal(merged.rolledBackAt, receipt.rolledBackAt);
+  assert.deepEqual(merged.rollbackResult, receipt.rollbackResult);
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.published, 1, JSON.stringify(recovery));
+});
+
+test('externalization cannot grow a rollback receipt past the cleanup and rebuild bound', async (t) => {
+  const env = await scene(t);
+  const receipt = {
+    version: 1, experimentId: EXPERIMENT, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z',
+    source: 'rollback-recovery-receipt',
+    rollbackResult: { ok: true, status: 'rolled-back-to-last-known-good' },
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z', reasons: [] },
+    proposal: env.proposal,
+  };
+  const receiptPath = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
+  const original = `${JSON.stringify(receipt, null, 2)}\n`;
+  await fs.writeFile(receiptPath, original);
+  await assert.rejects(externalizeEventBridgeEvidence(env.paths, [{
+    experimentId: EXPERIMENT,
+    evidence: { source: 'event-bridge', latestObservation: { padding: 'x'.repeat(2 * 1024 * 1024) } },
+  }]), (error) => error?.code === 'E_DOMAIN_ROLLBACK_RECEIPT_TOO_LARGE');
+  assert.equal(await fs.readFile(receiptPath, 'utf8'), original, 'the only durable receipt stays byte-identical');
+
+  const oversized = { ...receipt, padding: 'x'.repeat(2 * 1024 * 1024) };
+  await fs.writeFile(receiptPath, `${JSON.stringify(oversized, null, 2)}\n`);
+  await fs.writeFile(path.join(env.paths.promotionStateDir, 'rollback-intent.json'), `${JSON.stringify({
+    version: 1, experimentId: EXPERIMENT, phase: 'rollback-started', terminalSnapshot: receipt,
+  }, null, 2)}\n`);
+  await assert.rejects(recoverInterruptedPromotion(env.paths), /receipt.*invalid/);
+  assert.equal(await exists(path.join(env.paths.promotionStateDir, 'journal.json')), true);
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  assert.equal(report.checks.find((row) => row.id === 'promotion.journal').evidence.rollbackReceipt, 'invalid');
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.published, 0);
+  assert.deepEqual(recovery.skipped, [{ experimentId: EXPERIMENT, reason: 'evidence-too-large' }]);
+});
+
+test('a failed receipt write leaves a retryable intent, not a reopenable canary', async (t) => {
+  const env = await scene(t);
+  // Fail the atomic receipt publish after the rollback restored its targets.
+  // The receipt path itself stays absent, so live canary/doctor reads can still
+  // classify the retryable intent rather than an unreadable completed receipt.
+  const sidecarPath = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
+  const originalRename = fs.rename;
+  fs.rename = async function observedRename(from, to) {
+    if (String(to) === sidecarPath) throw new Error('simulated receipt write failure');
+    return originalRename.call(this, from, to);
+  };
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  try {
+    await assert.rejects(core.observeCanary(regressionArgs, execFor()), /simulated receipt write failure/);
+  } finally {
+    fs.rename = originalRename;
+  }
+  assert.equal(await exists(path.join(env.paths.promotionStateDir, 'rollback-intent.json')), true);
+  assert.equal((await readJournal(env.paths)).phase, 'canary-observing');
+  assert.equal(await fs.readFile(env.paths.compositionPath, 'utf8'), '[]\n', 'the targets were already rolled back');
+  await assert.rejects(core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:after-failed-receipt', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor()), /unfinished rollback/);
+  const pendingReport = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  const pendingCheck = pendingReport.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(pendingCheck.evidence.rollbackIntent, 'ready');
+  assert.equal(pendingCheck.evidence.rollbackReceipt, 'absent');
+  assert.match(pendingCheck.summary, /was started/);
+  assert.doesNotMatch(pendingCheck.summary, /completed and its durable receipt is present/);
+  assert.match(pendingCheck.remediation, /Restart/);
+  const recovered = await recoverInterruptedPromotion(env.paths);
+  assert.equal(recovered.status, 'rolled-back', JSON.stringify(recovered));
+  assert.equal(await exists(env.paths.promotionStateDir), false);
+  assert.ok(await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT), 'receipt completed on retry');
+  const result = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(result.published, 1);
+});
+
+test('an incomplete rollback intent is invalid, not a restartable rollback', async (t) => {
+  const env = await scene(t);
+  const intent = { version: 1, experimentId: EXPERIMENT, phase: 'rollback-started', terminalSnapshot: {} };
+  await fs.writeFile(path.join(env.paths.promotionStateDir, 'rollback-intent.json'), `${JSON.stringify(intent, null, 2)}\n`);
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  await assert.rejects(recoverInterruptedPromotion(env.paths), /invalid/);
+  await assert.rejects(core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:invalid-intent', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor()), /invalid/);
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  const check = report.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(check.level, 'blocked');
+  assert.equal(check.evidence.rollbackIntent, 'invalid');
+  assert.equal(await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT), null);
+});
+
+test('a rollback intent without rebuild identity is invalid before any target is touched', async (t) => {
+  const env = await scene(t);
+  const terminal = {
+    experimentId: EXPERIMENT, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z',
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z' },
+    proposal: env.proposal,
+  };
+  const variants = [
+    { ...terminal, proposal: undefined },
+    { ...terminal, proposal: { ...env.proposal, applicability: undefined } },
+    { ...terminal, proposal: { ...env.proposal, target: '' } },
+    { ...terminal, rolledBackAt: '' },
+    { ...terminal, decision: { kind: 'benefit' } },
+    { ...terminal, padding: 'x'.repeat(2 * 1024 * 1024) },
+  ];
+  for (const terminalSnapshot of variants) {
+    const intent = { version: 1, experimentId: EXPERIMENT, phase: 'rollback-started', terminalSnapshot };
+    await fs.writeFile(path.join(env.paths.promotionStateDir, 'rollback-intent.json'), `${JSON.stringify(intent, null, 2)}\n`);
+    await assert.rejects(recoverInterruptedPromotion(env.paths), /intent.*invalid/);
+    assert.equal(await exists(path.join(env.paths.promotionStateDir, 'journal.json')), true);
+    assert.equal(await fs.readFile(env.paths.compositionPath, 'utf8').then((text) => text.includes('evolution-promoted-')), true,
+      'invalid intent must not start a rollback');
+  }
+});
+
+test('a deeply nested intent is invalid without breaking startup recovery or doctor', async (t) => {
+  const env = await scene(t);
+  const terminal = {
+    experimentId: EXPERIMENT, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z',
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z' },
+    proposal: env.proposal,
+  };
+  const terminalJson = JSON.stringify(terminal).slice(0, -1);
+  const deep = `${'{"next":'.repeat(2000)}"leaf"${'}'.repeat(2000)}`;
+  const intentText = `{"version":1,"experimentId":${JSON.stringify(EXPERIMENT)},"phase":"rollback-started","terminalSnapshot":${terminalJson},"deep":${deep}}}\n`;
+  await fs.writeFile(path.join(env.paths.promotionStateDir, 'rollback-intent.json'), intentText);
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  await assert.rejects(recoverInterruptedPromotion(env.paths), /intent.*invalid/);
+  await assert.rejects(core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:deep-intent', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor()), /invalid/);
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  const check = report.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(check.level, 'blocked');
+  assert.equal(check.evidence.rollbackIntent, 'invalid');
+  assert.equal(await exists(path.join(env.paths.promotionStateDir, 'journal.json')), true);
+  assert.equal(await fs.readFile(env.paths.compositionPath, 'utf8').then((text) => text.includes('evolution-promoted-')), true);
+});
+
+test('an oversized ordinary canary sidecar is not mistaken for a damaged rollback receipt', async (t) => {
+  const env = await scene(t);
+  const sidecar = {
+    ...snapshotEvidenceFromRecord({ id: EXPERIMENT, proposal: env.proposal }),
+    padding: 'x'.repeat(2 * 1024 * 1024),
+  };
+  await fs.writeFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`), `${JSON.stringify(sidecar, null, 2)}\n`);
+  const pending = await recoverInterruptedPromotion(env.paths);
+  assert.equal(pending.status, 'canary-pending');
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  const observed = await core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:ordinary-sidecar', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor());
+  assert.equal(observed.phase, 'canary-observing');
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  const check = report.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(check.evidence.rollbackReceipt, 'not-rollback');
+  assert.equal(check.level, 'degraded');
+});
+
+test('an invalid completed receipt blocks cleanup even when the intent is valid', async (t) => {
+  const env = await scene(t);
+  const validTerminal = {
+    version: 1, experimentId: EXPERIMENT, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z',
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z' },
+    proposal: env.proposal,
+  };
+  await fs.writeFile(path.join(env.paths.promotionStateDir, 'rollback-intent.json'), `${JSON.stringify({
+    version: 1, experimentId: EXPERIMENT, phase: 'rollback-started', terminalSnapshot: validTerminal,
+  }, null, 2)}\n`);
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  const variants = [
+    { ...validTerminal, rolledBackAt: '' },
+    { ...validTerminal, rolledBackAt: 'not-a-timestamp' },
+    { ...validTerminal, decision: undefined },
+    { ...validTerminal, decision: { ...validTerminal.decision, at: 'not-a-timestamp' } },
+    { ...validTerminal, proposal: undefined },
+    { ...validTerminal, proposal: { ...env.proposal, applicability: undefined } },
+  ];
+  for (const receipt of variants) {
+    await fs.writeFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`), `${JSON.stringify(receipt, null, 2)}\n`);
+    await assert.rejects(recoverInterruptedPromotion(env.paths), /receipt.*invalid/);
+    await assert.rejects(core.observeCanary({
+      experimentId: EXPERIMENT,
+      barrier: { id: 'window:invalid-receipt', reached: true },
+      startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+    }, execFor()), /invalid rollback receipt/);
+    assert.equal(await exists(path.join(env.paths.promotionStateDir, 'journal.json')), true);
+    const report = await collectDiagnostics({
+      dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+    });
+    const check = report.checks.find((row) => row.id === 'promotion.journal');
+    assert.equal(check.level, 'blocked');
+    assert.equal(check.evidence.rollbackReceipt, 'invalid');
+    const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+    assert.equal(recovery.published, 0);
+    assert.deepEqual(recovery.skipped, [{ experimentId: EXPERIMENT, reason: 'invalid-rollback-receipt' }]);
+  }
+});
+
+test('an interrupted recursive cleanup leaves no active state directory and does not hold the live claim', async (t) => {
+  const env = await scene(t);
+  const originalRm = fs.rm;
+  let cleanupDir = null;
+  fs.rm = async function observedRm(target, options) {
+    if (String(target).startsWith(`${env.paths.promotionStateDir}.cleanup-`)) {
+      cleanupDir = String(target);
+      throw new Error('simulated cleanup interruption');
+    }
+    return originalRm.call(this, target, options);
+  };
+  const warnings = [];
+  const core = orchestratorFor(env, warnings);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  let result;
+  try {
+    result = await core.observeCanary(regressionArgs, execFor());
+  } finally {
+    fs.rm = originalRm;
+  }
+  assert.equal(result.phase, 'rolled-back');
+  assert.equal(result.rollbackCleanup, 'pending');
+  assert.equal(core.experiments.get(EXPERIMENT).state, 'rolled-back');
+  assert.ok(warnings.some((row) => row.includes('cleanup remains')), JSON.stringify(warnings));
+  assert.ok(cleanupDir);
+  assert.equal(await exists(env.paths.promotionStateDir), false, 'the active state path was atomically removed');
+  assert.equal(await exists(cleanupDir), true, 'the moved copy is the only interrupted cleanup residue');
+  assert.ok(await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT));
+  assert.deepEqual(await recoverInterruptedPromotion(env.paths), { recovered: false, status: 'none' });
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.published, 0, JSON.stringify(recovery));
+  assert.equal(recovery.duplicates, 1);
+});
+
+test('a failed parent fsync preserves the moved rollback directory while the live rollback still terminates', async (t) => {
+  const env = await scene(t);
+  const originalRename = fs.rename;
+  const originalFsync = nodeFs.fsyncSync;
+  let moved = false;
+  let failed = false;
+  let cleanupDir = null;
+  fs.rename = async function observedRename(from, to) {
+    const result = await originalRename.call(this, from, to);
+    if (String(from) === env.paths.promotionStateDir) {
+      moved = true;
+      cleanupDir = String(to);
+    }
+    return result;
+  };
+  nodeFs.fsyncSync = function observedFsync(descriptor) {
+    if (moved && !failed) {
+      failed = true;
+      throw new Error('simulated parent fsync failure');
+    }
+    return originalFsync.call(this, descriptor);
+  };
+  const warnings = [];
+  const core = orchestratorFor(env, warnings);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  let result;
+  try {
+    result = await core.observeCanary(regressionArgs, execFor());
+  } finally {
+    fs.rename = originalRename;
+    nodeFs.fsyncSync = originalFsync;
+  }
+  assert.equal(failed, true);
+  assert.equal(result.phase, 'rolled-back');
+  assert.equal(result.rollbackCleanup, 'pending');
+  assert.equal(core.experiments.get(EXPERIMENT).state, 'rolled-back');
+  assert.ok(cleanupDir);
+  assert.equal(await exists(env.paths.promotionStateDir), false);
+  assert.equal(await exists(cleanupDir), true, 'an unconfirmed rename must not be followed by recursive deletion');
+  assert.ok(warnings.some((row) => row.includes('cleanup remains')), JSON.stringify(warnings));
+});
+
+test('an unreadable rollback intent blocks recovery, live canary advancement and the doctor', async (t) => {
+  const env = await scene(t);
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  const intentPath = path.join(env.paths.promotionStateDir, 'rollback-intent.json');
+  // A directory at the intent path makes reads fail with EISDIR even for a
+  // privileged test process; ENOENT is the only "no intent started" signal.
+  await fs.mkdir(intentPath, { recursive: true });
+  await assert.rejects(recoverInterruptedPromotion(env.paths), /intent is unreadable/);
+  await assert.rejects(core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:unreadable-intent', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor()), /intent is unreadable/);
+  const diagPaths = { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths };
+  const report = await collectDiagnostics({ dshHome: env.root, paths: diagPaths });
+  const check = report.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(check.level, 'blocked');
+  assert.equal(check.evidence.rollbackIntent, 'unreadable', JSON.stringify(check.evidence));
+});
+
+test('a trimmed receipt still carries the probe applicability the live publisher used', async (t) => {
+  const env = await scene(t);
+  const otherVersions = { dsh: '0.2.22', cordis: '4.1.0', evolution: '0.2.22' };
+  const proposal = {
+    ...env.proposal, applicability: otherVersions,
+    successMetrics: Array.from({ length: 40 }, (_, i) => `metric-${i}-${'x'.repeat(60000)}`),
+  };
+  const latestObservation = { at: '2026-11-27T00:00:00.000Z', probe: { versions: APPLICABILITY, comparison: { regression: true } } };
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal, observations: [], latestObservation,
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  const result = await core.observeCanary(regressionArgs, execFor());
+  assert.equal(result.phase, 'rolled-back');
+  const receipt = await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT);
+  assert.ok(receipt);
+  assert.ok((await fs.stat(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`))).size < 2 * 1024 * 1024);
+  assert.deepEqual(receipt.latestObservation?.probe?.versions, APPLICABILITY, 'probe versions survive the trimming');
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.duplicates, 1, JSON.stringify(recovery));
+  assert.equal(recovery.published, 0, 'no second conclusion under the proposal versions');
+  assert.equal(findConclusion(env).best?.decision, 'regression');
+});
+
+test('applicability extras are projected out of the durable receipt', async (t) => {
+  const env = await scene(t);
+  const sentinel = 'sk-abcdefghijklmnopqrstuvwxyz123456';
+  const probeVersions = { ...APPLICABILITY, token: sentinel, extra: 'x'.repeat(3 * 1024 * 1024) };
+  const proposal = {
+    ...env.proposal,
+    applicability: { ...APPLICABILITY, token: sentinel },
+    successMetrics: Array.from({ length: 40 }, (_, i) => `metric-${i}-${'x'.repeat(60000)}`),
+  };
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal, observations: [], latestObservation: { probe: { versions: probeVersions } },
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  const result = await core.observeCanary(regressionArgs, execFor());
+  assert.equal(result.phase, 'rolled-back');
+  const sidecar = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
+  const text = await fs.readFile(sidecar, 'utf8');
+  assert.equal(text.includes(sentinel), false, 'credential-shaped version extras are not persisted');
+  assert.ok((await fs.stat(sidecar)).size < 2 * 1024 * 1024);
+  const receipt = await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT);
+  assert.deepEqual(receipt.latestObservation.probe.versions, APPLICABILITY);
+  assert.deepEqual(receipt.proposal.applicability, APPLICABILITY);
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.duplicates + recovery.published, 1, JSON.stringify(recovery));
+  assert.equal(findConclusion(env).best?.decision, 'regression');
+});
+
+test('an oversized proposal cannot block the rollback or overflow the receipt reader', async (t) => {
+  const env = await scene(t);
+  const proposal = { ...env.proposal, successMetrics: Array.from({ length: 40 }, (_, i) => `metric-${i}-${'x'.repeat(60000)}`) };
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  const result = await core.observeCanary(regressionArgs, execFor());
+  assert.equal(result.phase, 'rolled-back');
+  assert.equal(await exists(path.join(env.paths.pluginRoot, derivedPluginName(EXPERIMENT))), false, 'rollback was not blocked by receipt construction');
+  assert.equal(await exists(env.paths.promotionStateDir), false);
+  const sidecar = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
+  assert.ok((await fs.stat(sidecar)).size < 2 * 1024 * 1024);
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.duplicates, 1, JSON.stringify(recovery));
+  assert.deepEqual(recovery.rollbacks, [], 'an already-published conclusion is not a new recovery');
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: resolveEvolutionPaths({ dshHome: env.root }),
+    config: { rollbackConclusionReconciliation: recovery },
+  });
+  assert.equal(report.rollbackRecovery, undefined, 'a duplicate is not reported as a recovered rollback');
+});
+
+test('a duplicate archive render is not counted as a rebuilt terminal archive', async (t) => {
+  const env = await scene(t);
+  const receipt = {
+    version: 1, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z', experimentId: EXPERIMENT,
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z', reasons: [] },
+    proposal: env.proposal,
+  };
+  await fs.mkdir(env.paths.archiveDir, { recursive: true });
+  await fs.writeFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`), `${JSON.stringify(receipt, null, 2)}\n`);
+  const core = orchestratorFor(env);
+  // Emulates archive()'s memory-dedup early return: no Markdown is written.
+  core.archive = async () => path.join(env.paths.archiveDir, `${EXPERIMENT}.md`);
+  const recovery = await core.reconcileRollbackConclusions();
+  assert.equal(recovery.archived, 0, JSON.stringify(recovery));
+  assert.equal(recovery.published, 0);
+  assert.equal(recovery.failed.some((row) => row.reason === 'archive-failed'), true);
+  assert.deepEqual(recovery.rollbacks, []);
+});
+
+test('rollback-failed keeps its journal, writes no rollback receipt and reports no rollback', async (t) => {
+  const env = await scene(t, { corruptBackup: true });
+  const core = orchestratorFor(env);
+  const { experiments } = core;
+  experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  await assert.rejects(core.observeCanary(regressionArgs, execFor()), /rollback failed/);
+  const preserved = await readJournal(env.paths);
+  assert.equal(preserved.phase, 'rollback-failed');
+  assert.equal(await exists(env.paths.promotionStateDir), true);
+  assert.equal(await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT), null);
+  await assert.rejects(recoverInterruptedPromotion(env.paths), /rollback is incomplete/);
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.published, 0);
+  assert.deepEqual(recovery.rollbacks, []);
+  assert.equal(findConclusion(env).best?.decision ?? null, null);
+});
