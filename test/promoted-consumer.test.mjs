@@ -653,6 +653,63 @@ test('fallback verifies each candidate even when a sibling live entry is missing
   await session.dispose();
 });
 
+test('a fallback refresh that drops a previously active sibling unmounts it', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  // Two replacement chains whose replacements fail to apply force a fallback
+  // refresh. S was already active in the first pass, but the fallback live tree
+  // no longer resolves it: leaving it active and mounted would report a plugin
+  // that this composition cannot actually serve.
+  const a = await createRecord({ toolName: 'fallback_a_tool' });
+  const c = await createRecord({ toolName: 'fallback_c_tool' });
+  const s = await createRecord({ toolName: 'healthy_sibling_tool' });
+  const brokenReplacement = (toolName) => createRecord({
+    toolName,
+    inject: [],
+    requiredServices: [],
+    source: `export const name = '${toolName}';\nexport function apply() { throw new Error('${toolName} exploded'); }\n`,
+  });
+  const b = await brokenReplacement('broken_b_tool');
+  const d = await brokenReplacement('broken_d_tool');
+  await writeIndex([
+    { ...a.record, supersededBy: { acp: supersedeMarker(b.record) } },
+    b.record,
+    { ...c.record, supersededBy: { acp: supersedeMarker(d.record) } },
+    d.record,
+    s.record,
+  ]);
+
+  const omitEntries = new Set();
+  let refreshCount = 0;
+  const mountInclude = async (_ctx, config) => {
+    const adapter = fakeIncludeAdapter(config, {
+      fiberFor: (rowId) => (rowId === `shared-${b.record.id}` || rowId === `shared-${d.record.id}`
+        ? fakeFiber({ failApply: true }) : fakeFiber()),
+      omitEntries,
+    });
+    const plainRefresh = adapter.refresh;
+    adapter.refresh = async () => {
+      // The first (initial) refresh still serves S; a fallback refresh does not.
+      if (refreshCount >= 1) omitEntries.add(`shared-${s.record.id}`);
+      refreshCount += 1;
+      await plainRefresh();
+    };
+    return adapter;
+  };
+  const session = await mountSession(await boot(), dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(rows.get(b.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(d.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(a.record.id).status, 'active', 'the healthy fallback candidate still mounts');
+  assert.equal(rows.get(c.record.id).status, 'active');
+  assert.equal(rows.get(s.record.id).status, 'failed',
+    'a sibling missing from the fallback live tree must not stay active');
+  assert.equal(rows.get(s.record.id).reason, 'include-unavailable', 'the failure is non-sticky');
+  assert.equal(session.mounted.has(s.record.id), false, 'the missing sibling is not held for disposal');
+  assert.ok(session.mounted.has(a.record.id));
+  await session.dispose();
+});
+
 test('a first Include refresh failure does not keep the replacement sticky on the next start', async (t) => {
   const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
   const previous = await createRecord({ toolName: 'old_policy_tool' });
