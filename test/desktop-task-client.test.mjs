@@ -22,6 +22,7 @@ import {
   systemText,
 } from '../lib/desktop-task-client.js';
 import { consumerStateDocument, sha256 } from '../lib/promoted-sharing.js';
+import { USAGE_PROJECTION_COVERAGE, writeUsageProjection } from '../lib/capability-usage.js';
 import { evolutionPackageVersion } from '../lib/self-evolution-review.js';
 import {
   PROTOCOL_VERSION,
@@ -772,6 +773,24 @@ test('audit classifies a stable plugin verified on another host as pending-reval
   await fs.writeFile(path.join(channel.inbox, 'desktop-task-existing-1.json'), '{"sentinel":"request"}\n');
   await fs.writeFile(path.join(channel.state, 'desktop-task-existing-1.json'), '{"sentinel":"state"}\n');
   await fs.writeFile(path.join(channel.approvals, 'desktop-task-existing-1.json'), '{"sentinel":"approval"}\n');
+  // This test is about the host mismatch, not about usage evidence. Give the
+  // audit a healthy projection so the only next action is the revalidation.
+  await writeUsageProjection({
+    dataRoot: path.join(home, 'storages', 'evolution'),
+    projection: {
+      kind: 'dsh-evolution-capability-usage',
+      schemaVersion: 1,
+      coverage: USAGE_PROJECTION_COVERAGE,
+      source: 'session-evidence',
+      complete: true,
+      recordsComplete: true,
+      stale: false,
+      capturedAt: new Date().toISOString(),
+      records: {
+        [record.id]: { workflowInvocations: 1, verificationInvocations: 0, unattributedInvocations: 0, capabilityAssessment: 'workflow-relevant' },
+      },
+    },
+  });
   const sharedPlugins = path.join(home, 'storages', 'evolution', 'shared-plugins');
   const before = await treeSnapshot(home);
   const sharedBefore = await treeSnapshot(sharedPlugins);

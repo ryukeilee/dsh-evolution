@@ -166,8 +166,24 @@ async function writeConsumers(env, {
   }
 }
 
-function review(env, host = CURRENT_HOST) {
-  return readPublishedPluginReview({ paths: env.paths, host });
+// Most fixtures here are about consumer/host/publish facts, not about usage.
+// Give them a healthy read-only projection so they keep testing their own
+// subject; the missing-projection paths are covered explicitly in
+// chain-gap-03-usage-projection-visibility.test.mjs and below.
+const HEALTHY_USAGE = Object.freeze({
+  source: 'session-evidence',
+  coverage: USAGE_COVERAGE,
+  capturedAt: '2026-11-26T00:00:00.000Z',
+  complete: true,
+  recordsComplete: true,
+  stale: false,
+  records: {
+    [RECORD_ID]: { workflowInvocations: 1, verificationInvocations: 0, unattributedInvocations: 0, capabilityAssessment: 'workflow-relevant' },
+  },
+});
+
+function review(env, host = CURRENT_HOST, { usage = HEALTHY_USAGE, usageStatus = 'ok' } = {}) {
+  return readPublishedPluginReview({ paths: env.paths, host, usage, usageStatus });
 }
 
 /** Exact bytes (and the directory shape) under one root, for a read-only proof. */
@@ -975,7 +991,7 @@ test('a stale pending-revalidation row on a now-compatible record asks for a res
 test('value assessment stays honest when no usage projection is supplied', async (t) => {
   const env = await fixture(t, 'value-unknown');
   await writeConsumers(env);
-  const result = await review(env);
+  const result = await review(env, CURRENT_HOST, { usage: null, usageStatus: 'absent' });
   const [record] = result.records;
   assert.equal(record.value.tier, 'usage-unknown');
   assert.equal(record.value.installed, true);

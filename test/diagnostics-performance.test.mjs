@@ -28,7 +28,7 @@ function fixtureDshHost(home) {
  * fixture is an addition this baseline cannot list - it is named here so any
  * *unnamed* new check still fails the comparison.
  */
-const ADDED_CHECK_IDS = new Set(['state.ownership', 'state.retention-floor', 'promotion.sharing']);
+const ADDED_CHECK_IDS = new Set(['state.ownership', 'state.retention-floor', 'promotion.sharing', 'promotion.usage']);
 const ADDITIONAL_CHECK_IDS = new Set(['data.key']);
 
 /**
