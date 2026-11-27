@@ -313,6 +313,23 @@ x" in *) : ;; esac
   assert.equal(result.candidates[0].error, 'NO_EXEC_TARGET');
 });
 
+test('an escaped quote in the case selector cannot turn quoted text into a launch branch', (t) => {
+  const dir = tmp(t, 'host-res-case-selector-escaped-quote-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+case "x\\" in *) profile=x ;; esac
+exec ${process.execPath} "${dsh.bin}" "$@"
+x" in *) : ;; esac
+`);
+  fs.chmodSync(wrapper, 0o755);
+  assert.equal(spawnSync('/bin/sh', ['-n', wrapper]).status, 0, 'the fixture is valid POSIX shell');
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null, 'exec text inside a multi-line escaped selector is data');
+  assert.equal(result.candidates[0].error, 'NO_EXEC_TARGET');
+});
+
 test('an unclosed parameter expansion cannot turn its body into a launch branch', (t) => {
   const dir = tmp(t, 'host-res-inline-assignment-parameter-expansion-');
   const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
@@ -347,6 +364,39 @@ exec ${process.execPath} "${dsh.bin}" "$@"
   assert.equal(result.candidates[0].error, 'NO_EXEC_TARGET');
 });
 
+test('a nested quoted parameter expansion cannot hide a multi-line launch-looking value', (t) => {
+  const dir = tmp(t, 'host-res-inline-assignment-nested-parameter-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+case "$1" in *) profile="\${1:-"\${2:-"}" ;; esac
+exec ${process.execPath} "${dsh.bin}" "$@"
+}"}" ;; esac
+`);
+  fs.chmodSync(wrapper, 0o755);
+  assert.equal(spawnSync('/bin/sh', ['-n', wrapper]).status, 0, 'the fixture is valid POSIX shell');
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null, 'exec text inside a nested multi-line parameter expansion is data');
+  assert.equal(result.candidates[0].error, 'NO_EXEC_TARGET');
+});
+
+test('a single-quoted parameter-expansion prefix stays a literal assignment value', (t) => {
+  const dir = tmp(t, 'host-res-inline-assignment-literal-expansion-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+case "$1" in *) profile='\${' ;; esac
+exec ${process.execPath} "${dsh.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+  assert.equal(spawnSync('/bin/sh', ['-n', wrapper]).status, 0, 'the fixture is valid POSIX shell');
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected?.version, '0.2.2-rc.1');
+  assert.equal(result.candidates[0].error, undefined);
+});
+
 test('a quoted case assignment keeps quoted separators inside the value', (t) => {
   const dir = tmp(t, 'host-res-inline-assignment-quoted-separators-');
   const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
@@ -368,7 +418,7 @@ test('a one-line assignment case accepts a trailing comment after esac', (t) => 
   const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
   const wrapper = path.join(dir, 'dsh');
   fs.writeFileSync(wrapper, `#!/bin/sh
-case "$1" in *) profile=value ;; esac # profile selection
+case "$1" in *) profile=value ;; esac # \`profile\`
 exec ${process.execPath} "${dsh.bin}" "$@"
 `);
   fs.chmodSync(wrapper, 0o755);
@@ -610,12 +660,56 @@ exec "$(find-cli --token TEST_DUMMY_ONLY)" "$@"
   }]);
 
   const dshHome = doctorHome(t);
-  const report = await collectDiagnostics({ dshHome, cliPath: wrapper, probe: { skipComposition: true } });
+  const report = await withPathAsync('', () => collectDiagnostics({ dshHome, cliPath: wrapper, probe: { skipComposition: true } }));
   const cli = report.checks.find((check) => check.id === 'host.cli');
   assert.equal(cli.level, 'not-evaluated');
   assert.match(cli.summary, new RegExp(`${wrapper.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:2`));
   assert.doesNotMatch(JSON.stringify(cli.evidence), /find-cli|TEST_DUMMY_ONLY/);
   assert.doesNotMatch(cli.summary, /find-cli|TEST_DUMMY_ONLY/);
+});
+
+test('dynamic absolute launch and script paths are not copied into branch evidence', async (t) => {
+  const dir = tmp(t, 'host-res-dynamic-absolute-report-');
+  const dshHome = doctorHome(t);
+  const wrappers = [
+    'exec "/tmp/$(lookup --token TEST_DUMMY_ONLY)" "$@"',
+    `exec "${process.execPath}" "/tmp/\${CLI:-TEST_DUMMY_ONLY}.js" "$@"`,
+  ];
+  for (const [index, body] of wrappers.entries()) {
+    const wrapper = path.join(dir, `dsh-${index}`);
+    fs.writeFileSync(wrapper, `#!/bin/sh\n${body}\n`);
+    fs.chmodSync(wrapper, 0o755);
+    const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+    assert.equal(result.selected, null);
+    assert.equal(result.candidates[0].error, 'UNRESOLVED_EXEC_TARGET');
+    assert.equal(result.candidates[0].unresolvedBranches[0].wrapperPath, wrapper);
+    assert.equal(result.candidates[0].unresolvedBranches[0].line, 2);
+    assert.equal(result.candidates[0].unresolvedBranches[0].path, index === 0 ? undefined : process.execPath);
+    assert.doesNotMatch(JSON.stringify(result.candidates[0].unresolvedBranches), /lookup|TEST_DUMMY_ONLY|CLI/);
+
+    const report = await withPathAsync('', () => collectDiagnostics({ dshHome, cliPath: wrapper, probe: { skipComposition: true } }));
+    const cli = report.checks.find((check) => check.id === 'host.cli');
+    assert.equal(cli.level, 'not-evaluated');
+    assert.doesNotMatch(JSON.stringify(cli.evidence), /lookup|TEST_DUMMY_ONLY|CLI/);
+    assert.doesNotMatch(cli.summary, /lookup|TEST_DUMMY_ONLY/);
+  }
+});
+
+test('an Electron launch without a static entry reports the missing entry', (t) => {
+  const dir = tmp(t, 'host-res-electron-no-entry-');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness" "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null);
+  assert.deepEqual(result.candidates[0].unresolvedBranches, [{
+    wrapperPath: wrapper,
+    line: 2,
+    path: '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness',
+    error: 'UNRESOLVED_EXEC_TARGET',
+    detail: 'the Electron launch command has no statically attributable JS or ASAR entry',
+  }]);
 });
 
 test('versionless terminal branches keep the wrapper path and name each entryPath', async (t) => {
@@ -744,6 +838,28 @@ exec ${process.execPath} "${two.bin}" "$@"
   for (const id of ['host.cli', 'host.version', 'host.modules', 'host.composition']) {
     assert.equal(implicit.checks.find((entry) => entry.id === id)?.level, 'not-evaluated', `${id} stays fail-closed without explicit attribution`);
   }
+});
+
+test('a numeric manifest version is not replaced by an explicit CLI version probe', async (t) => {
+  const dir = tmp(t, 'host-res-explicit-numeric-version-');
+  const marker = path.join(dir, 'probed');
+  const source = `require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'executed'); console.log('0.2.2-rc.1');\n`;
+  const one = makeDshPackage(path.join(dir, 'host-one'), 123, source);
+  const two = makeDshPackage(path.join(dir, 'host-two'), 123, source);
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+if [ "$1" = 'web' ]; then
+  exec ${process.execPath} "${one.bin}" "$@"
+fi
+exec ${process.execPath} "${two.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const dshHome = doctorHome(t);
+  const report = await withPathAsync('', () => collectDiagnostics({ dshHome, cliPath: wrapper, probe: { skipComposition: true } }));
+  assert.equal(report.checks.find((check) => check.id === 'host.cli').level, 'ok');
+  assert.equal(report.checks.find((check) => check.id === 'host.version').level, 'blocked');
+  assert.equal(fs.existsSync(marker), false, 'a truthy non-string manifest version keeps the existing no-probe gate');
 });
 
 test('a valid branch cannot hide a versionless sibling in a multi-branch wrapper', async (t) => {
