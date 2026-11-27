@@ -13,7 +13,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { collectDiagnostics, resolveEvolutionPaths } from '../lib/diagnostics.js';
-import { consumerStateDocument, publishSharedRecord, readSharedIndex, writeConsumerState } from '../lib/promoted-sharing.js';
+import { consumerStateDocument, publishSharedRecord, readSharedIndex, setDisabledForProfile, writeConsumerState } from '../lib/promoted-sharing.js';
 
 const CLI = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'scripts', 'shared-plugins.mjs');
 const HEX = (value) => crypto.createHash('sha256').update(value).digest('hex');
@@ -21,20 +21,20 @@ const KEY = 'b'.repeat(64);
 const SOURCE = 'export const name = "shared";\nexport const inject = ["tools"];\nexport function apply() {}\n';
 const OLD = '2020-01-01T00:00:00.000Z';
 
-function recordFor(suffix, host, modulePath, manifest) {
+function recordFor(suffix, host, modulePath, manifest, approvedProfiles) {
   const pluginName = `dsh-evolution-promoted-${suffix}`;
   return {
     id: `evolution-promoted-${suffix}`, schemaVersion: 1, experimentId: `exp-chain-gap-01-${suffix}`,
     pluginName, moduleUrl: pathToFileURL(modulePath).href, entry: 'lib/index.js',
     sourceSha256: HEX(SOURCE), manifestSha256: HEX(manifest),
-    publisherProfile: 'desktop', approvedProfiles: ['acp', 'web'],
+    publisherProfile: 'desktop', approvedProfiles,
     stable: { committedAt: '2026-01-02T00:00:00.000Z', promotionTimestamp: '2026-01-01T00:00:00.000Z', decision: 'benefit', canary: { healthObservationWindow: 2, observations: 2, startupVerified: true } },
     requiredServices: ['tools'], serviceMembers: {}, requiredCapabilities: ['fiberLifecycle', 'fiberAwait', 'include', 'toolsRegistry'],
     hostOnly: true, host, revalidation: [], publishedAt: '2026-01-02T00:00:00.000Z',
   };
 }
 
-async function fixture(t, suffixes = ['aaaaaaaaaaaa']) {
+async function fixture(t, suffixes = ['aaaaaaaaaaaa'], approvedProfiles = ['acp', 'web']) {
   const dshHome = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-chain-gap-01-doctor-'));
   t.after(() => fs.rm(dshHome, { recursive: true, force: true }));
   const home = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-chain-gap-01-cli-'));
@@ -68,7 +68,7 @@ async function fixture(t, suffixes = ['aaaaaaaaaaaa']) {
     await fs.writeFile(modulePath, SOURCE);
     const manifest = `${JSON.stringify({ name: `dsh-evolution-promoted-${suffix}`, version: '0.1.0', type: 'module', main: 'lib/index.js' })}\n`;
     await fs.writeFile(path.join(pluginDir, 'package.json'), manifest);
-    const record = recordFor(suffix, host, modulePath, manifest);
+    const record = recordFor(suffix, host, modulePath, manifest, approvedProfiles);
     await publishSharedRecord({ dataRoot: root.dataRoot, pluginRoot: root.pluginRoot }, record);
     records.push({ root, record });
   }
@@ -121,13 +121,15 @@ test('approve, supersede, disable and enable report the stale profile in their J
   // A fresh data root per command: supersede rotates the index timestamp, so
   // the command's own effect on acp must not leak into the next case.
   const cases = [
-    ['approve', ['approve', '--plugin', 'P0', '--profile', 'web', '--approval', 'owner words'], ['web']],
-    ['supersede', ['supersede', '--old', 'P0', '--new', 'P1', '--profile', 'web', '--approval', 'owner words'], ['acp', 'web']],
-    ['disable', ['disable', '--plugin', 'P0', '--profile', 'web'], ['web']],
-    ['enable', ['enable', '--plugin', 'P0', '--profile', 'web'], ['web']],
+    // approve actually widens the record: web starts at the current index, the
+    // approval rotates it, and both consumers then need a restart.
+    ['approve', ['approve', '--plugin', 'P0', '--profile', 'web', '--approval', 'owner words'], ['acp', 'web'], ['acp']],
+    ['supersede', ['supersede', '--old', 'P0', '--new', 'P1', '--profile', 'web', '--approval', 'owner words'], ['acp', 'web'], ['acp', 'web']],
+    ['disable', ['disable', '--plugin', 'P0', '--profile', 'web'], ['web'], ['acp', 'web']],
+    ['enable', ['enable', '--plugin', 'P0', '--profile', 'web'], ['web'], ['acp', 'web']],
   ];
-  for (const [name, template, expected] of cases) {
-    const env = await fixture(t, ['aaaaaaaaaaaa', 'bbbbbbbbbbbb']);
+  for (const [name, template, expected, profiles] of cases) {
+    const env = await fixture(t, ['aaaaaaaaaaaa', 'bbbbbbbbbbbb'], profiles);
     const [first, second] = env.records.filter((row) => row.root === env.cliPaths).map((row) => row.record);
     await writeConsumers(env.cliPaths, env.host, [first.id, second.id], { acp: env.cliIndex.updatedAt, web: OLD });
     const args = template.map((value) => value === 'P0' ? first.id : value === 'P1' ? second.id : value);
@@ -137,6 +139,26 @@ test('approve, supersede, disable and enable report the stale profile in their J
     assert.match(run.json.restartGuidance ?? '', /web/);
     assert.match(run.json.restartGuidance ?? '', /[Rr]estart/);
   }
+});
+
+test('a revoked active mount is a revocation restart, not a claim of index lag', async (t) => {
+  const env = await fixture(t);
+  const record = env.records[0].record;
+  // acp already observed the current index, but still mounts the plugin.
+  await writeConsumers(env.paths, env.host, [record.id], { acp: env.index.updatedAt, web: env.index.updatedAt });
+  await writeConsumers(env.cliPaths, env.host, [record.id], { acp: env.cliIndex.updatedAt, web: env.cliIndex.updatedAt });
+  await setDisabledForProfile({ dataRoot: env.paths.dataRoot }, { pluginId: record.id, profile: 'acp', disabled: true });
+  const check = checkOf(await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } }));
+  assert.equal(check.level, 'degraded');
+  assert.deepEqual(check.evidence.pendingRestart, ['acp']);
+  assert.deepEqual(check.evidence.pendingRestartDetails, [{ profile: 'acp', reason: 'revoked-active-mount' }]);
+  assert.match(check.summary, /revoked/);
+  assert.match(check.remediation, /revoked/);
+  const run = runCli(['disable', '--plugin', record.id, '--profile', 'acp'], env.cliPaths.dataRoot);
+  assert.equal(run.code, 0, run.stderr);
+  assert.deepEqual(run.json.pendingRestartProfiles, ['acp']);
+  assert.deepEqual(run.json.pendingRestartDetails, [{ profile: 'acp', reason: 'revoked-active-mount' }]);
+  assert.match(run.json.restartGuidance, /revoked/);
 });
 
 test('CLI normal path reports an empty pending-restart list when every consumer followed the index', async (t) => {

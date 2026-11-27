@@ -53,7 +53,8 @@ import {
   annotateSharedRecord,
   consumerNeedsRestart,
   consumerRestartGuidance,
-  pendingRestartProfiles,
+  consumerRevocationGuidance,
+  pendingRestartDetails,
   readConsumerState,
   readDisableState,
   readPromotedPlugin,
@@ -453,9 +454,17 @@ async function withRestartGuidance(options, result) {
     const state = await readConsumerState(paths, profile);
     if (state.state) states[profile] = state.state;
   }
-  const pending = pendingRestartProfiles(index.updatedAt, index.records, states, disable.entries);
-  const guidance = consumerRestartGuidance(pending);
-  return { ...result, pendingRestartProfiles: pending, ...(guidance ? { restartGuidance: guidance } : {}) };
+  const details = pendingRestartDetails(index.updatedAt, index.records, states, disable.entries);
+  const guidance = [
+    consumerRestartGuidance(details.filter((row) => row.reason === 'index-stale').map((row) => row.profile)),
+    consumerRevocationGuidance(details.filter((row) => row.reason === 'revoked-active-mount').map((row) => row.profile)),
+  ].filter(Boolean).join(' ');
+  return {
+    ...result,
+    pendingRestartProfiles: details.map((row) => row.profile),
+    pendingRestartDetails: details,
+    ...(guidance ? { restartGuidance: guidance } : {}),
+  };
 }
 
 async function main(argv) {
