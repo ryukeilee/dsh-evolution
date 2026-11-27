@@ -20,6 +20,7 @@ import {
   USAGE_PROJECTION_COVERAGE,
 } from '../lib/capability-usage.js';
 import { readPublishedPluginReview } from '../lib/self-evolution-review.js';
+import { collectDiagnostics, resolveEvolutionPaths } from '../lib/diagnostics.js';
 
 const SCRIPT = fileURLToPath(new URL('../docs/audit/replay/capability-usage.mjs', import.meta.url));
 
@@ -778,4 +779,198 @@ test('historical generations beside a current file are one session, not unsuppor
   assert.equal(projection.scannedSessions, 1);
   assert.equal(projection.records[RECORD_ID].workflowInvocations, 1);
   assert.equal(projection.failures, undefined);
+});
+
+test('--template exports every published record with tool names, source paths and current counts', async (t) => {
+  const env = scratch(t);
+  fs.mkdirSync(path.join(env.root, 'sessions'), { recursive: true });
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeRecord(env, { id: SECOND_ID, source: 'return { name: "context-policy", apply() {} };\n' });
+  writeSession(env.root, 'one', [call('widget_tool', 'c1')]);
+  const templatePath = path.join(env.root, 'assessments-template.json');
+  const { status, projection: template } = run(env.root, ['--template', templatePath]);
+  assert.equal(status, 0);
+  assert.deepEqual(JSON.parse(fs.readFileSync(templatePath, 'utf8')), template);
+  assert.equal(fs.statSync(templatePath).mode & 0o777, 0o600);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+  assert.equal(template.kind, 'dsh-evolution-capability-assessments-template');
+  assert.deepEqual(Object.keys(template.assessments).sort(), [RECORD_ID, SECOND_ID].sort());
+  assert.ok(Object.values(template.assessments).every((value) => value === 'unknown'));
+  const byId = new Map(template.records.map((row) => [row.id, row]));
+  assert.deepEqual(byId.get(RECORD_ID).toolNames, ['widget_tool']);
+  assert.equal(byId.get(RECORD_ID).sourcePath, path.join(env.dataRoot, 'promoted', `dsh-${RECORD_ID}`, 'lib', 'index.js'));
+  assert.equal(byId.get(RECORD_ID).counts.workflowInvocations, 1);
+  assert.equal(byId.get(RECORD_ID).capabilityAssessment, 'unknown');
+  assert.deepEqual(byId.get(SECOND_ID).toolNames, []);
+  assert.equal(byId.get(SECOND_ID).sourcePath, path.join(env.dataRoot, 'promoted', `dsh-${SECOND_ID}`, 'lib', 'index.js'));
+  assert.equal(byId.get(SECOND_ID).counts.workflowInvocations, null, 'no tool surface has no count');
+  // The template describes the same counts a scan would persist, without persisting them.
+  const { status: scanStatus, projection: scanned } = run(env.root, ['--out', path.join(env.root, 'projection.json')]);
+  assert.equal(scanStatus, 0);
+  assert.equal(byId.get(RECORD_ID).counts.workflowInvocations, scanned.records[RECORD_ID].workflowInvocations);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+});
+
+test('an unedited template keeps every assessment unknown and produces no retirement candidate', async (t) => {
+  const env = scratch(t);
+  fs.mkdirSync(path.join(env.root, 'sessions'), { recursive: true });
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const templatePath = path.join(env.root, 'assessments-template.json');
+  assert.equal(run(env.root, ['--template', templatePath]).status, 0);
+  assert.equal(JSON.parse(fs.readFileSync(templatePath, 'utf8')).assessments[RECORD_ID], 'unknown');
+  assert.equal(run(env.root, ['--write', '--assessments', templatePath]).status, 0);
+  const loaded = await readUsageProjection({ dataRoot: env.dataRoot });
+  assert.equal(loaded.status, 'ok');
+  assert.equal(loaded.usage.complete, true);
+  assert.equal(loaded.usage.records[RECORD_ID].workflowInvocations, 0);
+  assert.equal(loaded.usage.records[RECORD_ID].capabilityAssessment, 'unknown');
+  const review = await readPublishedPluginReview({ paths: env.paths, host: HOST, usage: loaded.usage, usageStatus: 'ok' });
+  assert.equal(review.records[0].value.capabilityAssessment, 'unknown');
+  assert.equal(review.retirementCandidates.length, 0);
+  assert.equal(review.nextActions.some((row) => row.action === 'review-retirement'), false);
+});
+
+test('--template is read-only and cannot be combined with --write', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const templatePath = path.join(env.root, 'assessments-template.json');
+  const out = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', templatePath, '--write'], { encoding: 'utf8' });
+  assert.notEqual(out.status, 0);
+  assert.match(out.stderr, /cannot be combined/);
+  assert.equal(fs.existsSync(templatePath), false);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+});
+
+test('doctor says every in-scope record is unmeasured when no projection exists', async (t) => {
+  const env = scratch(t);
+  const ids = Array.from({ length: 6 }, (_, index) => `evolution-promoted-${(index + 1).toString(16).padStart(12, '0')}`);
+  for (const id of ids) writeRecord(env, { id, source: WIDGET_SOURCE });
+  const report = await collectDiagnostics({ home: env.root, paths: resolveEvolutionPaths({ dshHome: env.root }) });
+  const check = report.checks.find((row) => row.id === 'promotion.usage');
+  assert.equal(check.evidence.status, 'absent');
+  assert.equal(check.evidence.publishedRecordCount, 6);
+  assert.equal(check.evidence.missingRecordCount, 6);
+  assert.equal(check.evidence.unmeasuredRecordCount, 6);
+  assert.match(check.summary, /all 6 published record\(s\) in scope are unmeasured/);
+  assert.doesNotMatch(check.summary, /0 absent from the projection/);
+});
+
+test('the review hand-off keeps a concrete home for a custom data root', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'one', [call('widget_tool', 'c1')]);
+  const customRoot = path.join(env.root, 'storages', 'custom');
+  const customShared = path.join(customRoot, 'shared-plugins');
+  fs.mkdirSync(customShared, { recursive: true });
+  const customModule = path.join(customRoot, 'promoted', `dsh-${RECORD_ID}`, 'lib', 'index.js');
+  fs.mkdirSync(path.dirname(customModule), { recursive: true });
+  fs.copyFileSync(path.join(env.dataRoot, 'promoted', `dsh-${RECORD_ID}`, 'lib', 'index.js'), customModule);
+  fs.copyFileSync(path.join(env.dataRoot, 'promoted', `dsh-${RECORD_ID}`, 'package.json'), path.join(path.dirname(path.dirname(customModule)), 'package.json'));
+  const index = JSON.parse(fs.readFileSync(path.join(env.dataRoot, 'shared-plugins', 'published.json'), 'utf8'));
+  index.plugins[0].moduleUrl = pathToFileURL(customModule).href;
+  fs.writeFileSync(path.join(customShared, 'published.json'), `${JSON.stringify(index)}\n`);
+  const loaded = await readUsageProjection({ dataRoot: customRoot });
+  assert.equal(loaded.evidence.status, 'absent');
+  const review = await readPublishedPluginReview({
+    // Deliberately no dshHome: the audit only resolved a custom data root.
+    paths: { dataRoot: customRoot, pluginRoot: path.join(customRoot, 'promoted') },
+    host: HOST, usage: loaded.usage, usageStatus: loaded.evidence.status,
+  });
+  const action = review.nextActions.find((row) => typeof row.code === 'string' && row.code.startsWith('usage-projection-'));
+  assert.ok(action, JSON.stringify(review.nextActions));
+  assert.ok(action.command.includes(`--home '${env.root}'`), action.command);
+  assert.ok(action.command.includes(`--data-root '${customRoot}'`), action.command);
+  assert.doesNotMatch(action.command, /\$\{/);
+  // The exact commands from the real review entry must work with no shell env.
+  const bare = { PATH: process.env.PATH };
+  const templateRun = spawnSync('sh', ['-c', action.templateCommand], { encoding: 'utf8', env: bare });
+  assert.ok(templateRun.status === 0 || templateRun.status === 3, templateRun.stderr);
+  const writeRun = spawnSync('sh', ['-c', action.command], { encoding: 'utf8', env: bare });
+  assert.ok(writeRun.status === 0 || writeRun.status === 3, writeRun.stderr);
+  const after = await readUsageProjection({ dataRoot: customRoot });
+  assert.equal(after.status, 'ok');
+  // One real call in the resolved home was counted, not silently turned into zero.
+  assert.equal(after.usage.records[RECORD_ID].workflowInvocations, 1);
+});
+
+test('--template refuses the projection path and its symlinked aliases', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const usagePath = path.join(env.dataRoot, 'shared-plugins', 'usage.json');
+  const direct = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', usagePath], { encoding: 'utf8' });
+  assert.notEqual(direct.status, 0);
+  assert.match(direct.stderr, /must not target the usage projection/);
+  assert.equal(fs.existsSync(usagePath), false);
+
+  const alias = path.join(env.root, 'alias');
+  fs.symlinkSync(path.join(env.dataRoot, 'shared-plugins'), alias);
+  const aliased = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', path.join(alias, 'usage.json')], { encoding: 'utf8' });
+  assert.notEqual(aliased.status, 0);
+  assert.match(aliased.stderr, /must not target the usage projection/);
+  assert.equal(fs.existsSync(usagePath), false);
+});
+
+test('--template never overwrites an already reviewed template', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const templatePath = path.join(env.root, 'assessments-template.json');
+  const edited = { assessments: { [RECORD_ID]: 'self-contained' } };
+  fs.writeFileSync(templatePath, JSON.stringify(edited));
+  const out = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', templatePath], { encoding: 'utf8' });
+  assert.notEqual(out.status, 0);
+  assert.match(out.stderr, /already exists/);
+  assert.deepEqual(JSON.parse(fs.readFileSync(templatePath, 'utf8')), edited);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+});
+
+test('a missing --template value fails before the producer scans or writes', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const missing = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', '--write'], { encoding: 'utf8' });
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /--template requires a value/);
+  const reversed = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--write', '--template', path.join(env.root, 'template.json')], { encoding: 'utf8' });
+  assert.notEqual(reversed.status, 0);
+  assert.match(reversed.stderr, /cannot be combined/);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+});
+
+test('--template refuses a case-only alias of usage.json even before it exists', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const usagePath = path.join(env.dataRoot, 'shared-plugins', 'usage.json');
+  // The guard is intentionally uniform: a filename that differs only by case
+  // is refused on both case-sensitive and case-insensitive filesystems.
+  const alias = path.join(path.dirname(usagePath), path.basename(usagePath).toUpperCase());
+  const out = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', alias], { encoding: 'utf8' });
+  assert.notEqual(out.status, 0);
+  assert.match(out.stderr, /must not target the usage projection/);
+  assert.equal(fs.existsSync(usagePath), false, 'the projection itself is never replaced by a template');
+  assert.equal(fs.existsSync(alias), false);
+});
+
+test('--template refuses a projection reached through a symlinked ancestor', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const link = path.join(env.root, 'data-link');
+  fs.symlinkSync(env.dataRoot, link);
+  const alias = path.join(link, 'shared-plugins', 'usage.json');
+  const out = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--data-root', env.dataRoot, '--template', alias], { encoding: 'utf8' });
+  assert.notEqual(out.status, 0);
+  assert.match(out.stderr, /must not target the usage projection/);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage-assessments.json')), false);
+});
+
+test('--template refuses the target of a dangling usage.json symlink', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const shared = path.join(env.dataRoot, 'shared-plugins');
+  const target = path.join(env.root, 'elsewhere', 'target.json');
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.symlinkSync(target, path.join(shared, 'usage.json'));
+  const out = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', target], { encoding: 'utf8' });
+  assert.notEqual(out.status, 0);
+  assert.match(out.stderr, /must not target the usage projection/);
+  assert.equal(fs.existsSync(target), false);
 });
