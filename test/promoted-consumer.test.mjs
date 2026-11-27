@@ -1068,6 +1068,50 @@ test('a failed fallback rebuild reports include-unavailable and never claims act
   await session.dispose();
 });
 
+test('a failed old Include disposer stops the rebuild instead of double-mounting', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const previous = await createRecord({ toolName: 'dispose_old_tool' });
+  const broken = await createRecord({
+    toolName: 'dispose_broken_tool',
+    inject: [],
+    requiredServices: [],
+    source: "export const name = 'dispose-broken';\nexport function apply() { throw new Error('replacement exploded'); }\n",
+  });
+  await writeIndex([
+    { ...previous.record, supersededBy: { acp: supersedeMarker(broken.record) } },
+    broken.record,
+  ]);
+
+  let mountCount = 0;
+  const mountInclude = async (_ctx, config) => {
+    mountCount += 1;
+    const adapter = fakeIncludeAdapter(config, {
+      fiberFor: (rowId) => (rowId === `shared-${broken.record.id}` ? fakeFiber({ failApply: true }) : fakeFiber()),
+    });
+    if (mountCount === 1) {
+      // The old subtree cannot prove it was unloaded. Swallowing this error
+      // and mounting a new child would double-mount the restored predecessor
+      // (once on the stale tree, once on the new one).
+      adapter.dispose = async () => { throw new Error('old Include subtree refused to dispose'); };
+    }
+    return adapter;
+  };
+  const session = await mountSession(await boot(), dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(mountCount, 1, 'no second Include subtree is mounted after the failed disposer');
+  assert.equal(rows.get(broken.record.id).status, 'failed');
+  assert.equal(rows.get(broken.record.id).reason, 'plugin-apply-failed', 'the failed replacement keeps its sticky receipt');
+  assert.equal(rows.get(previous.record.id).status, 'failed', 'no intended row is claimed active without a settled tree');
+  assert.equal(rows.get(previous.record.id).reason, 'include-unavailable', 'the failed disposer is a non-sticky host fact');
+  assert.equal(session.mounted.size, 0, 'no fiber from the broken rebuild survives');
+  assert.equal(session.adapter, null, 'no stale adapter is kept after a failed disposer');
+  assert.deepEqual(
+    [previous.record.id, broken.record.id].filter((id) => rows.get(id).status === 'active'),
+    [], 'no version of the chain is active');
+  await session.dispose();
+});
+
 test('a first Include refresh failure does not keep the replacement sticky on the next start', async (t) => {
   const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
   const previous = await createRecord({ toolName: 'old_policy_tool' });
