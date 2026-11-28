@@ -722,6 +722,21 @@ no Evolution kernel, tools, model call, timer, poller or background work.
    staged, SHA256-verified, atomic, idempotent imports and refuses missing or
    changed source data. It never discovers paths on its own.
 
+5. **Test-side migration baselines** — differential tests preserve compatibility
+   with pre-archive and pre-migration formats:
+   `test/fixtures/memory-pre-archive-row-window.js` (4,608 lines) is a pre-archive
+   snapshot of `lib/dockyard-domain/memory.js`; `test/fixtures/diagnostics.mjs`
+   (1,846 lines) preserves the pre-migration diagnostic contract; and
+   `test/domain-storage/domain-storage-baseline.js`,
+   `test/dockyard-domain/archive-index-baseline.js` and
+   `test/domain-storage/staged-window-deferred-baseline.js` (3,660 lines combined)
+   preserve the domain-storage, archive-index and staged-window contracts.
+   Excluding those three `*-baseline.js` files, 79 files under `test/` contain a
+   case-insensitive `baseline` reference.
+   *Removal condition:* delete once no supported layout still needs to read a
+   pre-archive or pre-migration format; delete them together with the equivalence
+   assertions that depend on them.
+
 ## Known functional blockers (not repository blockers)
 
 The following capabilities are **not** fully independent of the host and are
