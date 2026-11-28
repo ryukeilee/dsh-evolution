@@ -150,6 +150,182 @@ ELECTRON_RUN_AS_NODE=1 exec "/mock/DeepSeek Harness" --expose-internals "${deskt
   assert.equal(result.alternatives[0].hostFacts.dsh, '0.2.2-rc.5');
 });
 
+test('the official profile wrapper attributes ACP to Desktop and other profiles to Node', async (t) => {
+  const dir = tmp(t, 'host-res-official-profile-wrapper-');
+  const nodeHost = makeDshPackage(path.join(dir, 'node-host'), '0.2.2-rc.1');
+  const resources = path.join(dir, 'Desktop', 'Contents', 'Resources');
+  fs.mkdirSync(resources, { recursive: true });
+  const asar = path.join(resources, 'app.asar');
+  makeAsar(asar, [
+    { internalPath: 'dsh/node_modules/@deepseek-ai/dsh/package.json', value: { name: '@deepseek-ai/dsh', version: '0.2.2-rc.5' } },
+  ]);
+  const desktopCli = path.join(resources, 'runtime', 'cli', 'bin', 'dsh');
+  fs.mkdirSync(path.dirname(desktopCli), { recursive: true });
+  fs.writeFileSync(desktopCli, `#!/bin/sh
+# Run the installed CLI without changing the invoking shell or working directory.
+set -e
+launcher=$0
+while [ -L "$launcher" ]; do
+  directory=$(CDPATH= cd -- "$(dirname -- "$launcher")" && pwd -P)
+  target=$(readlink "$launcher")
+  case "$target" in
+    /*) launcher=$target ;;
+    *) launcher=$directory/$target ;;
+  esac
+done
+resources=$(CDPATH= cd -- "$(dirname -- "$launcher")/../../.." && pwd -P)
+ELECTRON_RUN_AS_NODE=1 exec "$resources/../MacOS/DeepSeek Harness" --expose-internals "$resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js" "$@"
+`);
+  fs.chmodSync(desktopCli, 0o755);
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+set -eu
+# ACP uses Desktop's bundled runtime (including ASAR-backed preset Skills).
+profile=''
+previous=''
+for argument in "$@"; do
+  if [ "$previous" = '--profile' ]; then profile=$argument; fi
+  case "$argument" in --profile=*) profile=\${argument#--profile=} ;; esac
+  previous=$argument
+done
+if [ "$profile" = 'acp' ] || { [ "$#" -gt 0 ] && [ "$1" = 'acp' ]; }; then
+  exec '${desktopCli}' "$@"
+fi
+exec ${process.execPath} "${nodeHost.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const desktopEntry = `${fs.realpathSync(asar)}/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js`;
+  for (const [profile, version, entryPath] of [
+    ['acp', '0.2.2-rc.5', desktopEntry],
+    ['web', '0.2.2-rc.1', nodeHost.bin],
+  ]) {
+    const resolution = withPath('', () => resolveHostCli({ cliPath: wrapper, profile }));
+    assert.equal(resolution.selected.version, version);
+    assert.equal(resolution.selected.entryPath, entryPath);
+    assert.deepEqual(resolution.alternatives, [], 'the exact official branch condition attributes one host');
+    const report = await withPathAsync('', () => collectDiagnostics({
+      dshHome: doctorHome(t), cliPath: wrapper, profile, probe: { skipComposition: true },
+    }));
+    const cli = report.checks.find((check) => check.id === 'host.cli');
+    const hostVersion = report.checks.find((check) => check.id === 'host.version');
+    assert.equal(cli.level, 'ok');
+    assert.equal(cli.evidence.candidates[0].version, version);
+    assert.equal(hostVersion.level, 'ok');
+    assert.equal(hostVersion.evidence.found, version);
+  }
+
+  // A generic outer wrapper that rewrites the arguments cannot pass the
+  // requested profile through to the official inner wrapper. A single-quoted
+  // '$@' is a literal argument, not the original argument vector.
+  const sourced = path.join(dir, 'mutate-args.sh');
+  fs.writeFileSync(sourced, 'set -- acp\n');
+  for (const [name, launch] of [
+    ['rewriting-dsh', `exec "${wrapper}" acp "$@"`],
+    ['literal-args-dsh', `exec "${wrapper}" acp '$@'`],
+    ['mutated-args-dsh', `set -- acp\nexec "${wrapper}" "$@"`],
+    ['sourced-args-dsh', `. "${sourced}"\nexec "${wrapper}" "$@"`],
+  ]) {
+    const outer = path.join(dir, name);
+    fs.writeFileSync(outer, `#!/bin/sh\n${launch}\n`);
+    fs.chmodSync(outer, 0o755);
+    const report = await withPathAsync('', () => collectDiagnostics({
+      dshHome: doctorHome(t), cliPath: outer, profile: 'web', probe: { skipComposition: true },
+    }));
+    assert.equal(report.checks.find((check) => check.id === 'host.cli').evidence.profileHostAmbiguous, true);
+    const version = report.checks.find((check) => check.id === 'host.version');
+    assert.equal(version.level, 'not-evaluated');
+    assert.equal(version.evidence.found, null);
+  }
+
+  for (const [name, source] of [
+    ['noexec-shebang-dsh', `#!/bin/sh -n\nexec "${wrapper}" "$@"`],
+    ['unicode-outer-dsh', `#!/bin/sh\nexec \u00a0"${wrapper}" "$@"`],
+  ]) {
+    const outer = path.join(dir, name);
+    fs.writeFileSync(outer, `${source}\n`);
+    fs.chmodSync(outer, 0o755);
+    const report = await withPathAsync('', () => collectDiagnostics({
+      dshHome: doctorHome(t), cliPath: outer, profile: 'web', probe: { skipComposition: true },
+    }));
+    assert.equal(report.checks.find((check) => check.id === 'host.cli').evidence.profileHostAmbiguous, true);
+    const version = report.checks.find((check) => check.id === 'host.version');
+    assert.equal(version.level, 'not-evaluated');
+    assert.equal(version.evidence.found, null);
+  }
+});
+
+test('a near-match of an official wrapper prelude stays unattributed', (t) => {
+  const dir = tmp(t, 'host-res-official-near-match-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+profile=''
+previous=''
+for argument in "$@"; do
+  printf '%s\\n' "$argument"
+  case "$argument" in --profile=*) profile=\${argument#--profile=} ;; esac
+  previous=$argument
+done
+exec ${process.execPath} "${dsh.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+  const resolution = withPath('', () => resolveHostCli({ cliPath: wrapper, profile: 'acp' }));
+  assert.equal(resolution.selected, null);
+  assert.equal(resolution.candidates[0].error, 'NO_EXEC_TARGET');
+
+  const desktop = path.join(dir, 'desktop', 'dsh');
+  pointerWrapper(desktop, dsh.bin);
+  const noexec = path.join(dir, 'noexec-dsh');
+  fs.writeFileSync(noexec, `#!/bin/sh
+set -eun
+profile=''
+previous=''
+for argument in "$@"; do
+  if [ "$previous" = '--profile' ]; then profile=$argument; fi
+  case "$argument" in --profile=*) profile=\${argument#--profile=} ;; esac
+  previous=$argument
+done
+if [ "$profile" = 'acp' ] || { [ "$#" -gt 0 ] && [ "$1" = 'acp' ]; }; then
+  exec '${desktop}' "$@"
+fi
+exec ${process.execPath} "${dsh.bin}" "$@"
+`);
+  fs.chmodSync(noexec, 0o755);
+  const noexecResolution = withPath('', () => resolveHostCli({ cliPath: noexec, profile: 'acp' }));
+  assert.equal(noexecResolution.selected, null, 'set -n exits without launching a host');
+  assert.equal(noexecResolution.candidates[0].error, 'NO_EXEC_TARGET');
+
+  const official = fs.readFileSync(noexec, 'utf8').replace('set -eun', 'set -eu');
+  const literalArgs = path.join(dir, 'literal-args-dsh');
+  fs.writeFileSync(literalArgs, official.replace(`exec '${desktop}' "$@"`, `exec '${desktop}' '$@'`));
+  fs.chmodSync(literalArgs, 0o755);
+  const literalResolution = withPath('', () => resolveHostCli({ cliPath: literalArgs, profile: 'acp' }));
+  assert.equal(literalResolution.selected, null, 'a single-quoted $@ is not argument forwarding');
+  assert.equal(literalResolution.candidates[0].error, 'NO_EXEC_TARGET');
+
+  const crlf = path.join(dir, 'crlf-dsh');
+  fs.writeFileSync(crlf, official.replace(/\n/g, '\r\n'));
+  fs.chmodSync(crlf, 0o755);
+  const crlfResolution = withPath('', () => resolveHostCli({ cliPath: crlf, profile: 'acp' }));
+  assert.equal(crlfResolution.selected, null, 'a CRLF shebang is not the official executable script shape');
+  assert.equal(crlfResolution.candidates[0].error, 'NO_EXEC_TARGET');
+
+  const unicodeIndent = path.join(dir, 'unicode-indent-dsh');
+  fs.writeFileSync(unicodeIndent, official.replace(`\n  exec '${desktop}' "$@"`, `\n\u00a0exec '${desktop}' "$@"`));
+  fs.chmodSync(unicodeIndent, 0o755);
+  const unicodeResolution = withPath('', () => resolveHostCli({ cliPath: unicodeIndent, profile: 'acp' }));
+  assert.equal(unicodeResolution.selected, null, 'non-breaking space is not shell indentation');
+  assert.equal(unicodeResolution.candidates[0].error, 'NO_EXEC_TARGET');
+
+  const unicodeSeparator = path.join(dir, 'unicode-separator-dsh');
+  fs.writeFileSync(unicodeSeparator, official.replace(`  exec '${desktop}' "$@"`, `  exec \u00a0'${desktop}' "$@"`));
+  fs.chmodSync(unicodeSeparator, 0o755);
+  const separatorResolution = withPath('', () => resolveHostCli({ cliPath: unicodeSeparator, profile: 'acp' }));
+  assert.equal(separatorResolution.selected, null, 'non-breaking space is not an exec argument separator');
+  assert.equal(separatorResolution.candidates[0].error, 'NO_EXEC_TARGET');
+});
+
 test('same-version Desktop and Node entries remain ambiguous for module attribution', async (t) => {
   const dir = tmp(t, 'host-res-whitelisted-same-version-');
   const nodeHost = makeDshPackage(path.join(dir, 'node-host'), '0.2.2-rc.5');
