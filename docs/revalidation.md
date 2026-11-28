@@ -52,7 +52,7 @@ node scripts/acceptance/run-revalidation.mjs --home ~/.dsh --out docs/evidence/r
 决定覆盖证据中 `plugins[]` 列出的全部记录；若目标范围超出本次批准，停止采纳。撤销或启用 profile
 是独立的生产状态变更，必须另行明确决定，不得为了筛选证据而在此流程中提前执行，也不要手改证据。
 
-### 3. 采纳前重查并采纳已审阅的证据（写正式发布索引）
+### 3. 采纳前禁写窗口、重查与采纳已审阅的证据（写正式发布索引）
 
 运行写入命令前，重新生成撤销状态快照与 `published.json` SHA-256。只比较快照中的
 `indexStatus`、`disableStatus` 以及按记录 ID 归组的 `disabledProfiles`；`list` 中的 consumer
@@ -66,12 +66,26 @@ shasum -a 256 ~/.dsh/storages/evolution/shared-plugins/published.json \
 ```
 
 撤销状态或索引摘要任一不一致，立即中止，不调用采纳命令、不写入正式数据根；一致才继续。
-同时重算证据 SHA-256 并与审阅时记下的值比对。全部一致后，直接把这个证据文件交给既有采纳命令，
-不重新运行验证 runner：
+同时重算证据 SHA-256 并与审阅时记下的值比对。
+
+在最后一次比较完成前，操作者必须协调同一数据根的**人工禁写窗口**，并让它持续到
+`revalidate` 命令返回：窗口内不得执行 `disable` / `enable` / `approve` / `supersede` /
+`revoke-supersede` / 再次 `revalidate` / 重新发布等写入，也不得改动 promoted 源码；其他操作者、
+进程或自动化也必须暂停对 `shared-plugins/` 的写入。撤销或启用只改 `disabled.json`，
+`published.json` 的摘要可能保持不变，因此摘要一致不能证明窗口安全。索引发布锁只保护单次命令内部，
+不会把上面的快照比较与撤销表状态变成一个跨命令原子事务，因此这道窗口是人工门禁，不能假定由 CLI 强制。
+若无法确认窗口内没有其他写入者，或无法暂停相关写入，**不要运行采纳命令**；等待条件具备后重新
+生成快照与摘要并重查，不能以“命令会加锁”为理由跳过。
+
+全部一致且禁写窗口已确认后，直接把这个证据文件交给既有采纳命令，不重新运行验证 runner：
 
 ```sh
 node scripts/shared-plugins.mjs revalidate --home ~/.dsh --evidence docs/evidence/revalidation-review.json
 ```
+
+命令返回后立即重查撤销状态：它必须仍与已审阅快照一致。若发现或怀疑窗口内发生了撤销、启用、
+索引写入、源码改动或证据替换，停止后续操作，不回滚、不补写，也不把该回执当作已审状态的采纳证明；
+保留现场并报告不一致，按新状态重新取证、审阅和决定。
 
 该命令只处理证据中 `plugins[]` 列出的记录，并在索引锁内重新校验发布字节、逐条核对记录的 `sourceSha256`。
 它不会比较取证时的索引摘要或撤销状态，因此上面的快照、摘要与证据复核是采纳前必需的人工门禁。
@@ -117,6 +131,7 @@ runner 做这些事：
 - 索引在验证期间被其它发布改动时，runner 的 `--apply` 路径拒绝采纳；直接采纳已审证据时，
   操作者必须在写入前完成索引摘要重查。
 - 撤销状态快照与证据一起审阅，并在写入前重查；不一致即中止且不写入。
+- 最后一次重查至采纳命令返回之间必须维持人工禁写窗口；无法确保没有其他写入者时不得采纳。
 - 方案 A 只采纳已审阅证据；`run-revalidation.mjs --apply` 仅作既有行为说明，不得作为采纳路径。
 - 证据不通过则什么都不写。
 
@@ -137,11 +152,11 @@ ACP 需要新 session，Web 需要重启入口（沙箱里用同一条 `dsh --pr
    核对宿主、`source.indexDigestBefore`、`verification.targetIds` / `plugins[]` 范围、源码摘要与各 profile
    结果，并记录证据 SHA-256。任一检查失败或目标范围超出批准，就停止采纳；撤销或启用 profile 必须另作
    独立决定，不得作为取证的前置步骤。
-4. 操作者审阅通过并明确决定采纳后，先按第 3 步重查撤销状态、索引摘要与证据 SHA-256；不一致即中止
-   且不写入。全部一致才直接运行
+4. 操作者审阅通过并明确决定采纳后，按第 3 步协调人工禁写窗口，再重查撤销状态、索引摘要与证据
+   SHA-256；不一致或无法确保窗口内没有其他写入者时中止且不写入。全部一致且窗口已确认才直接运行
    `node scripts/shared-plugins.mjs revalidate --home ~/.dsh --evidence docs/evidence/revalidation-review.json`，
-   只采纳该证据列出的记录。不要用再次运行 `run-revalidation.mjs --apply` 代替这一步，因为它会重新筛选
-   目标并采纳新证据。
+   只采纳该证据列出的记录。命令返回后重查撤销状态；发现或怀疑窗口内发生变化时停止后续操作并报告。
+   不要用再次运行 `run-revalidation.mjs --apply` 代替这一步，因为它会重新筛选目标并采纳新证据。
 5. 重启 ACP / Web 消费入口（新 session 或重启 Web），审计应回到 `active`。
 
 不需要再人工构造证据，也不需要改插件源码。若某条记录在验证阶段不是 `pending-revalidation`
