@@ -21,7 +21,7 @@
 
 更早版本的真实任务收益、usage 审计、read 损失恢复、跨阶段可靠性与宿主扩展等能力已包含在 `0.2.23` 中；各版本的详细边界与证据见 `CHANGELOG.md`。
 
-固定产物之后的 main（截至 `1ad3bdc`，领先 `v0.2.23` 49 个提交）尚未进入任何 tag 或 Release，实现改动集中在 `lib/` 与 `scripts/`，主题为 PR #117–#122：**doctor 宿主归因**会有界解析启动分支，无法归因时写明 reason，并按 consumer profile 判断宿主兼容性；跨 profile 安装版本不一致报 `degraded`，给出逐 profile 重装命令且 `recoverable: false`。**usage 投影覆盖**把 absent、invalid、ambiguous、unscanned 等不可用证据记为 unknown，不再当成实测 0 调用；覆盖不足只让零值无法确认，已记录的正数仍有效。模板与写入命令绑定被审计 home 并逐 token 转义。**回滚恢复**在触碰目标前持久化 rollback intent，重启校验后按原意图重放同一幂等回滚；已有有效 receipt 时只清理 journal，损坏的 intent / receipt 会拒绝猜测并保留现场。
+固定产物之后的 main（截至 `1ad3bdc`，领先 `v0.2.23` 49 个提交）尚未进入任何 tag 或 Release，实现改动集中在 `lib/` 与 `scripts/`，主题为 PR #117–#122：**doctor 宿主归因**会有界解析启动分支，无法归因时写明 reason，并按 consumer profile 判断宿主兼容性；跨 profile 安装版本不一致报 `degraded`，给出逐 profile 重装命令且 `recoverable: false`。**usage 投影覆盖**把 absent、invalid、ambiguous、unscanned 等不可用证据记为 unknown，不再当成实测 0 调用；覆盖不足只让零值无法确认，已记录的正数仍有效。模板与写入命令绑定被审计 home 并逐 token 转义。**回滚恢复**中，`canary-observing` 阶段的回归回滚在触碰目标前持久化 rollback intent，重启校验后按原意图重放同一幂等回滚；已有有效 receipt 时只清理 journal，损坏的 intent / receipt 会拒绝猜测并保留现场。
 
 ### Desktop、ACP、Web 共用经验
 
