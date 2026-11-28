@@ -186,7 +186,11 @@ function validManifest(paths, files) {
 }
 
 function baseOptions(home, extra = {}) {
-  return { home: true, dshHome: home, probe: { skipComposition: true }, ...extra };
+  // Host discovery is not what these fault-injection fixtures test. Pin the
+  // repository's installed CLI so a developer's global `dsh` (or its absence)
+  // cannot decide whether composition and sharing fixtures can run at all.
+  const cliPath = path.join(repoRoot, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
+  return { home: true, dshHome: home, cliPath, probe: { skipComposition: true }, ...extra };
 }
 
 /** A context that satisfies every required runtime surface. */

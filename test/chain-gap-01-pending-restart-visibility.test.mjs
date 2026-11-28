@@ -11,11 +11,14 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { collectDiagnostics, resolveEvolutionPaths } from '../lib/diagnostics.js';
 import { consumerStateDocument, publishSharedRecord, readSharedIndex, setDisabledForProfile, sharingPaths, writeConsumerState } from '../lib/promoted-sharing.js';
 
-const CLI = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'scripts', 'shared-plugins.mjs');
+const testDir = path.dirname(fileURLToPath(import.meta.url));
+const CLI = path.join(testDir, '..', 'scripts', 'shared-plugins.mjs');
+const repoRoot = path.dirname(testDir);
+const HOST_CLI = path.join(repoRoot, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
 const HEX = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const KEY = 'b'.repeat(64);
 const SOURCE = 'export const name = "shared";\nexport const inject = ["tools"];\nexport function apply() {}\n';
@@ -45,7 +48,7 @@ async function fixture(t, suffixes = ['aaaaaaaaaaaa'], approvedProfiles = ['acp'
     await fs.mkdir(p.dataRoot, { recursive: true, mode: 0o700 });
     await fs.writeFile(p.keyPath, KEY, { mode: 0o600 });
   }
-  const observed = await collectDiagnostics({ dshHome, home: true, probe: { skipComposition: true } });
+  const observed = await diagnose(dshHome);
   const hostEvidence = observed.checks.find((check) => check.id === 'host.version')?.evidence ?? {};
   const modulesCheck = observed.checks.find((check) => check.id === 'host.modules');
   const modules = modulesCheck?.evidence?.modules ?? [];
@@ -88,6 +91,12 @@ async function writeConsumers(root, host, pluginIds, observed) {
 
 const checkOf = (report) => report.checks.find((check) => check.id === 'promotion.sharing');
 
+function diagnose(dshHome) {
+  // These fixtures test publication/restart state, not machine-local CLI
+  // discovery. Pin the installed host so PATH cannot invalidate the records.
+  return collectDiagnostics({ dshHome, home: true, cliPath: HOST_CLI, probe: { skipComposition: true } });
+}
+
 function runCli(args, dataRoot) {
   const result = spawnSync(process.execPath, [CLI, ...args, '--data-root', dataRoot, '--json'], { encoding: 'utf8' });
   let json = null;
@@ -98,7 +107,7 @@ function runCli(args, dataRoot) {
 test('doctor names the stale profile in summary and remediation, while acp stays on the normal path', async (t) => {
   const env = await fixture(t);
   await writeConsumers(env.paths, env.host, [env.records[0].record.id], { acp: env.index.updatedAt, web: OLD });
-  const check = checkOf(await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } }));
+  const check = checkOf(await diagnose(env.dshHome));
   assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
   assert.deepEqual(check.evidence.pendingRestart, ['web']);
   assert.match(check.summary, /web/);
@@ -110,7 +119,7 @@ test('doctor names the stale profile in summary and remediation, while acp stays
 test('a consumer that already observed the current index keeps the unchanged normal path', async (t) => {
   const env = await fixture(t);
   await writeConsumers(env.paths, env.host, [env.records[0].record.id], { acp: env.index.updatedAt, web: env.index.updatedAt });
-  const check = checkOf(await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } }));
+  const check = checkOf(await diagnose(env.dshHome));
   assert.equal(check.level, 'ok', JSON.stringify(check.evidence));
   assert.deepEqual(check.evidence.pendingRestart, []);
   assert.doesNotMatch(check.summary, /need a restart/);
@@ -148,7 +157,7 @@ test('a revoked active mount is a revocation restart, not a claim of index lag',
   await writeConsumers(env.paths, env.host, [record.id], { acp: env.index.updatedAt, web: env.index.updatedAt });
   await writeConsumers(env.cliPaths, env.host, [record.id], { acp: env.cliIndex.updatedAt, web: env.cliIndex.updatedAt });
   await setDisabledForProfile({ dataRoot: env.paths.dataRoot }, { pluginId: record.id, profile: 'acp', disabled: true });
-  const check = checkOf(await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } }));
+  const check = checkOf(await diagnose(env.dshHome));
   assert.equal(check.level, 'degraded');
   assert.deepEqual(check.evidence.pendingRestart, ['acp']);
   assert.deepEqual(check.evidence.pendingRestartDetails, [{ profile: 'acp', reason: 'revoked-active-mount' }]);
@@ -173,7 +182,7 @@ test('a profile can need both a revoked unload and a stale-index reload', async 
   }
   await setDisabledForProfile({ dataRoot: env.paths.dataRoot }, { pluginId: oldRecord.id, profile: 'web', disabled: true });
   await setDisabledForProfile({ dataRoot: env.cliPaths.dataRoot }, { pluginId: oldRecord.id, profile: 'web', disabled: true });
-  const check = checkOf(await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } }));
+  const check = checkOf(await diagnose(env.dshHome));
   assert.deepEqual(check.evidence.pendingRestartDetails, [
     { profile: 'web', reason: 'revoked-active-mount' }, { profile: 'web', reason: 'index-stale' },
   ]);
