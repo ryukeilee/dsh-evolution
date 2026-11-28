@@ -7,6 +7,7 @@
 | 关键事实 | 当前值 |
 | --- | --- |
 | 版本 | `0.2.23`（稳定版） |
+| main 相对固定产物 | 领先 `v0.2.23` 49 个提交（截至 `1ad3bdc`；尚未进入任何 tag 或 Release） |
 | 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1`、`0.2.2-rc.2`、`0.2.2-rc.3`、`0.2.2-rc.4`、`0.2.2-rc.5`（后五者须关闭宿主 HMR，见下） |
 | Node | `^22.19.0 || >=24.0.0` |
 | 分发 | GitHub Release tarball；不发布 npm 包 |
@@ -18,11 +19,9 @@
 
 本版本（`0.2.23`）是 `0.2.22` 的稳定性后继，收口第十四轮进化闭环耗时研究（PR #101）与跨入口替换、consumer 会话回收、doctor 宿主解析和验收抖动修复（PR #109–#112）。相对 `0.2.22` 固定产物，分发内容改 `lib/diagnostics.js`、`lib/promoted-consumer.js`、`lib/promoted-sharing.js`、`lib/promotion-include.js`、`lib/self-evolution-review.js`、`scripts/shared-plugins.mjs`，新增 `lib/promoted-consumer-gc.js`：stable 记录可以用 `approve` 获得另一个消费 profile，用 `supersede` 只在替换方确实可挂载时才让旧记录让位、失效时自动回退，并用 `revoke-supersede` 逐 profile 撤回；consumer 按持久游标逐会话回收孤儿 composition；doctor 在隔离 composition 探针前拒绝不安全 profile 名并阻断符号链接写入穿透。持久化 schema 编号未变，`0.2.19` 的 floor 降级边界不变；既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变。已有 stable 插件、共享经验、进化档案与生产数据不迁移、不下线。详见 `docs/shared-plugins.md` 与 `docs/performance/consumer-session-gc.md`。
 
-`0.2.18` 把自我进化闭环的跨阶段可靠性事实收口（PR #87、#88 与 #89）：晋升、canary、失败学习与结论检索对同一问题身份使用统一投影；陈旧结论不会被同 scope 的新结论挤出有界检索窗口；target claim 的获取、释放与回滚失败复用跨进程互斥原语；guard 的风险判定取参数路径、证明绑定取宿主注入的 target；缺失 `pluginPackages` 服务时 consumer 沿用既有宿主身份回退；`discover().truncated` 进入完整性判定；probe 的超时、取消与空结果批统一记为 `unmeasured`。
+更早版本的真实任务收益、usage 审计、read 损失恢复、跨阶段可靠性与宿主扩展等能力已包含在 `0.2.23` 中；各版本的详细边界与证据见 `CHANGELOG.md`。
 
-`0.2.17` 引入的能力全部保留：`evolution_plan` 与 ACP `evolution_desktop` 的只读 `audit` 在显式审计时读取 `<dataRoot>/shared-plugins/usage.json` 这份 ≤512 KiB 的投影（由 `docs/audit/replay/capability-usage.mjs --write` 生成），返回 `usageEvidence`；归因只在晋升生命周期调用尚未返回时把发布工具调用算作验证流量，生命周期调用从未返回时记为 `unattributedInvocations`，不注册工具的能力则通过配对会话证据证明 `experiment-benefit`。工具作用域退化一旦有观测恢复与 workflow 收益声明，planner 直接给出 `context-policy`、`tools/post-execute` 与恢复基线；`review-retirement` 动作只报告证据与可逆的停用命令，等待所有者授权，检查本身从不执行停用。`read` 的字节上限损失（`Output capped`）由同一套发现与晋升机制处理：候选只在官方 footer 或结构化证据证明窗口被截断时追加有界尾部（≤200 行、≤16 KiB、文件 ≤256 KiB），不注册工具；`exercised` 只认对同一路径从第 1 行开始并以期望值成功的第一次请求。
-
-本版本把自我进化收益的判断推进到真实任务：workflow 收益必须有同一任务、同一模型、无候选 vs 有候选各 ≥3 次的真实会话证据（`taskBenefit` 门禁），并绑定候选 Host 源码摘要与 DSH/Cordis 版本；`scripts/acceptance/task-benefit.mjs` 在隔离 home 中用真实 ACP 宿主与真实模型生产该证据（源码仓库脚本，不随 tarball 分发），`run-task-benefit-loop.mjs` 跑完整闭环并在 fresh consumer 上验证自动复用。probe 继续区分 `capability-self-test` 与 `workflow`：单工具前后对照只算 `tool-improvement`；paired workload 只提供 `workflowBenefit` 证据，workflow 与 context-policy 晋升还必须通过 `taskBenefit`（同一任务、同一模型的成对真实会话）；context-policy 计划必须声明可重放的 `verification.functionalCheck`（`read` / `glob` / `grep`），安装成功本身不算生效。collector 另外记录 `line-truncated` / `output-capped` 这类非错误退化（只认官方 footer），planner 按损失频率、恢复成本与可恢复性排序。Desktop 的 `evolution_plan` 与 ACP 的 `evolution_desktop` 只读 `audit` 仍先分类已发布 stable 插件、再排序经验候选、最后给出有序 `selfEvolution.nextActions`；检查不写发布索引、不启动 Trial、不批准晋升。四个已发布 stable 插件、已有共享经验与生产数据都保持不变。本版本新增 DSH `0.2.2-rc.4` / `rc.5`：官方 rc.3 → rc.4 只改 DSH 升级说明与依赖固定；rc.4 → rc.5 只改 DSH 文档与 `dsh-base` 的 `cordis.patch.yml`（移除固定 `web.searchProvider`，改由 dsh-web 按模型路由选择），本 bundle 使用的运行时包逐字节相同，因此只扩展精确宿主声明，并用真实宿主验收后固定进发布产物。`0.2.2-rc.1` 至 `rc.5` 需要关闭宿主 HMR，见下文。已有 schema 1 共享经验库在普通启动下继续保持原布局、不会被自动迁移。
+固定产物之后的 main（截至 `1ad3bdc`，领先 `v0.2.23` 49 个提交）尚未进入任何 tag 或 Release，实现改动集中在 `lib/` 与 `scripts/`，主题为 PR #117–#122：**doctor 宿主归因**会有界解析启动分支，无法归因时写明 reason，并按 consumer profile 判断宿主兼容性；跨 profile 安装版本不一致报 `degraded`，给出逐 profile 重装命令且 `recoverable: false`。**usage 投影覆盖**把 absent、invalid、ambiguous、unscanned 等不可用证据记为 unknown，不再当成实测 0 调用；覆盖不足只让零值无法确认，已记录的正数仍有效。模板与写入命令绑定被审计 home 并逐 token 转义。**回滚恢复**中，`canary-observing` 阶段的回归回滚在触碰目标前持久化 rollback intent，重启校验后按原意图重放同一幂等回滚；已有有效 receipt 时只清理 journal，损坏的 intent / receipt 会拒绝猜测并保留现场。
 
 ### Desktop、ACP、Web 共用经验
 
@@ -352,10 +351,10 @@ Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 i
 
 | 覆盖组 | 检查内容 |
 | --- | --- |
-| 宿主 | CLI、版本与模块、安装、官方 composition |
+| 宿主 | CLI、版本与模块、安装、官方 composition、跨 profile 安装版本落差（main 未发布：`degraded`，给出逐 profile 重装命令，`recoverable: false`） |
 | 运行时 | 能力、12 个工具的注册、Cordis / Include 接口探针 |
 | 数据与状态 | 数据根、key、target claim、memory、档案、事件桥 MAC、domain 聚合 / staging / 锁、旧 Dockyard 状态 |
-| 迁移与晋升 | migration manifest；journal、composition、pointer |
+| 迁移与晋升 | migration manifest；journal、composition、pointer、usage 投影覆盖（main 未发布：无数据根为 `not-evaluated`；投影不可用时相关零值无法确认为实测 0，已记录的正数仍有效） |
 | 插件与能力 | 插件目录、包、patch、支持矩阵、legacy adapter、已知限制 |
 
 分级含义：
