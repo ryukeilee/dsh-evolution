@@ -84,7 +84,8 @@
 
 ### 测试与发布数据
 
-- `test/`：Node 原生测试（`.test.mjs` / `.test.js`，当前 248 个文件）。根目录以 `review-fix-*` 命名保留各轮评审的回归，`test/domain-storage/`、`test/dockyard-domain/`（含 `continuous/`）按层分组，`test/fixtures/` 与各目录的 `*-baseline.js` 是差分等价性基线。
+- `test/`：Node 原生测试（`.test.mjs` / `.test.js`，当前 267 个测试文件（另有 37 个 fixture／helper 文件，共 304 个 js／mjs））。`test/` 下以 `review-fix-*` 命名保留各轮评审的回归（46 个文件，合计 10,950 行），`test/domain-storage/`、`test/dockyard-domain/`（含 `continuous/`）按层分组，`test/fixtures/` 与各目录的 `*-baseline.js` 是差分等价性基线。
+- 回归测试并入该模块既有的测试文件；新增独立测试文件需要一条理由（跨模块、需要独立 fixture、需要独立进程）。`test/` 下现有的 46 个 `review-fix-*` 文件、10,950 行，就是缺这条规则的产物。
 - `test/workflows.test.mjs` 断言 CI 形状（作业集合、作业级堆上限、验收矩阵），`test/release-pin.test.mjs` 判定工作树与固定点的关系。
 - `release/`：随仓库固定的发布产物（每个候选一个 tarball，历史候选保留）、`manifest.json`、`SHA256SUMS`。**不要手工编辑这些文件。**
 - `docs/evidence/`：与固定产物对应的验收记录；`docs/performance/`：性能数据与收益边界；`docs/shared-plugins.md`：跨入口发布记录与 consumer 状态；`docs/revalidation.md`：宿主升级后已发布 stable 记录的取证与采纳；`docs/design/`：统一经验存储、经验驱动进化、ACP → Desktop 控制与统一只读检查的设计；`docs/core-reliability.md`：rc.5 时期的恢复边界探索记录，不是当前合同。
